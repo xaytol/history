@@ -234,3 +234,13 @@ button, .plan-check, .question-item summary { touch-action: manipulation; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+
+/* Interactive flashcard */
+.flashcard { cursor: pointer; }
+.flashcard:focus-visible { outline: 2px solid var(--orange); outline-offset: 4px; }
+.flashcard .reveal-inline { cursor: pointer; }
+@media (hover: hover) {
+  .flashcard { transition: box-shadow .18s ease, border-radius .18s ease; }
+  .flashcard:hover { box-shadow: 0 20px 52px #0003; }
+}
