@@ -11,3 +11,226 @@
 @media(max-width:900px){.app-shell{padding:0 22px}.hero{gap:25px;grid-template-columns:minmax(0,1fr) 210px}.dashboard{grid-template-columns:repeat(3,1fr)}.progress-stat{grid-column:1/-1}.study-layout{grid-template-columns:150px minmax(0,1fr);gap:19px}.technique-grid{grid-template-columns:repeat(2,1fr)}.technique-card{min-height:0}}
 @media(max-width:650px){.app-shell{padding:0 15px}.topbar{height:70px}.top-meta>span:nth-child(2){display:none}.top-meta .date-pill{margin-left:0}.brand-mark{width:37px;height:37px}.hero{grid-template-columns:1fr;padding:42px 3px 35px;gap:28px}.hero-stamp{min-height:0;display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:12px;padding:16px}.stamp-small{grid-column:1}.hero-stamp strong{grid-column:1;grid-row:2;font-size:42px}.stamp-label{grid-column:1;grid-row:3}.stamp-divider{width:1px;height:55px;grid-column:2;grid-row:1/4;margin:0}.stamp-note{grid-column:3;grid-row:1/4}.stamp-star{display:none}h1{letter-spacing:-2.5px}.hero-text{font-size:13px}.dashboard{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:28px}.stat-card{padding:12px;gap:9px}.stat-icon{flex-basis:30px;height:30px}.stat-card strong{font-size:19px}.progress-stat{grid-column:1/-1}.tabs{margin-bottom:27px;gap:0}.tab{font-size:11px;padding:12px 11px}.tab span{display:none}.section-heading{align-items:flex-start;flex-direction:column;gap:7px;margin-bottom:20px}.section-heading h2{font-size:25px}.study-layout{display:flex;flex-direction:column;gap:14px}.side-note{order:2;padding:15px 4px 0;border-top:1px solid var(--line)}.side-note p{max-width:450px}.side-note .side-rule,.side-note .key-line{display:none}.deck-column{width:100%}.flashcard{min-height:340px;padding:20px}.card-question{font-size:22px;padding:25px 0}.card-bottom{align-items:flex-start}.card-bottom>span{max-width:55%;line-height:1.5}.deck-controls{gap:8px}.deck-controls .button{min-width:0;flex:1}.rating-row{grid-template-columns:1fr 1fr}.rating-bookmark{grid-column:1/-1}.trainer-panel{padding:20px}.trainer-panel h3{font-size:25px;margin:21px 0}.library-tools{grid-template-columns:1fr 1fr}.search-box{grid-column:1/-1}.question-item summary{padding:12px;grid-template-columns:24px minmax(0,1fr) auto;gap:9px}.item-question{font-size:11px}.item-answer{padding:0 12px 14px 45px}.results-line span:last-child{max-width:50%;text-align:right}.plan-intro{grid-template-columns:65px 1fr;gap:14px;padding:18px}.plan-big-number{font-size:44px}.plan-big-number span{font-size:17px}.plan-intro h3{font-size:15px}.day-grid{grid-template-columns:1fr}.day-card{padding:19px}.technique-grid{grid-template-columns:1fr 1fr;gap:8px}.technique-card{padding:15px 12px}.technique-card h3{font-size:13px}.footer{flex-wrap:wrap;justify-content:space-between}.footer span:last-child{width:100%;order:3}.section-heading .mode-chip{margin-left:0}.plan-footer{padding:15px}.trainer-grade>span{width:100%;margin-bottom:3px}}
 @media(max-width:380px){.technique-grid{grid-template-columns:1fr}.hero-actions .button{width:100%}.library-tools{grid-template-columns:1fr}.search-box{grid-column:auto}.rating{padding:10px 8px}.rating strong{font-size:9px}.rating small{font-size:8px}}
+
+/* Mobile-first usability polish */
+html { scroll-padding-top: 110px; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, .plan-check, .question-item summary { touch-action: manipulation; }
+:focus-visible { scroll-margin-block: 110px; }
+
+@media (max-width: 650px) {
+  body { font-size: 15px; line-height: 1.65; }
+  .app-shell { width: 100%; padding-inline: clamp(12px, 4vw, 18px); }
+  .topbar { min-height: 64px; height: auto; gap: 12px; }
+  .brand-copy strong { font-size: 11px; }
+  .top-meta { gap: 7px; }
+  .date-pill { font-size: 9px; padding: 5px 7px; }
+
+  .hero { padding: 34px 0 28px; gap: 23px; }
+  h1 { font-size: clamp(40px, 11vw, 58px); line-height: 1.04; margin: 15px 0 16px; }
+  .hero-text { font-size: 14px; line-height: 1.75; max-width: 48rem; }
+  .hero-actions { display: grid; grid-template-columns: 1fr; gap: 9px; margin-top: 20px; }
+  .hero-actions .button { width: 100%; min-height: 48px; font-size: 13px; }
+  .hero-stamp { border-radius: 12px; }
+  .stamp-note { font-size: 12px; }
+
+  .dashboard { gap: 8px; margin-bottom: 22px; }
+  .stat-card { min-height: 70px; padding: 11px 10px; border-radius: 11px; }
+  .stat-icon { flex-basis: 30px; height: 30px; }
+  .stat-card strong { font-size: 21px; }
+  .stat-card span:not(.stat-icon) { font-size: 11px; line-height: 1.35; }
+  .progress-stat { min-height: 0; padding: 13px 14px; }
+  .progress-stat small { display: block; font-size: 10px; line-height: 1.55; }
+
+  /* Two rows are easier to tap than a clipped horizontal tab strip. */
+  .tabs {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px 0 10px;
+    margin: 0 0 25px;
+    background: rgba(16, 27, 42, .94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(48, 70, 90, .9);
+  }
+  .tab {
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    padding: 9px 7px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font-size: 12px;
+    line-height: 1.25;
+    background: rgba(25, 42, 59, .68);
+  }
+  .tab span { display: inline; font-size: 9px; }
+  .tab.active {
+    border: 1px solid rgba(240, 183, 120, .45);
+    border-bottom: 1px solid rgba(240, 183, 120, .45);
+    background: #263548;
+  }
+  .view { scroll-margin-top: 116px; }
+  .section-heading { gap: 10px; margin-bottom: 18px; }
+  .section-heading h2 { font-size: clamp(23px, 6.6vw, 28px); line-height: 1.25; }
+  .section-heading .text-button { min-height: 40px; }
+
+  .study-layout { gap: 12px; }
+  .deck-topline { min-height: 28px; gap: 12px; font-size: 10px; }
+  .deck-topline > span:first-child { max-width: 70%; line-height: 1.45; }
+  .flashcard {
+    min-height: 0;
+    padding: 20px 19px 17px;
+    border-radius: 14px;
+  }
+  .card-top { padding-bottom: 12px; }
+  .card-question {
+    padding: 26px 0;
+    font-size: clamp(21px, 5.8vw, 27px);
+    line-height: 1.42;
+    overflow-wrap: anywhere;
+  }
+  .card-answer { padding-top: 16px; }
+  .card-answer p { font-size: 16px; line-height: 1.7; }
+  .card-bottom { gap: 9px; padding-top: 14px; }
+  .card-bottom > span { max-width: 56%; font-size: 11px; }
+  .reveal-inline { min-height: 38px; font-size: 12px; padding: 7px 0 7px 6px; }
+  .deck-controls { gap: 9px; margin: 14px 0; }
+  .circle-button { flex: 0 0 46px; width: 46px; height: 46px; font-size: 18px; }
+  .deck-controls .button { min-height: 46px; padding: 10px 12px; font-size: 12px; }
+  .rating-row { gap: 8px; }
+  .rating {
+    min-height: 62px;
+    padding: 10px 11px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+  .rating strong { font-size: 12px; }
+  .rating small { font-size: 10px; line-height: 1.35; white-space: normal; }
+  .rating > span:first-child { font-size: 19px; }
+  .side-note { margin-top: 3px; padding: 14px 3px 0; }
+  .side-note h3 { font-size: 16px; }
+  .side-note p { font-size: 12px; line-height: 1.75; }
+
+  .trainer-panel { padding: 20px 16px; border-radius: 13px; }
+  .trainer-head { align-items: flex-start; font-size: 9px; line-height: 1.5; }
+  .trainer-panel h3 { font-size: clamp(22px, 6vw, 27px); line-height: 1.4; margin: 22px 0; overflow-wrap: anywhere; }
+  .answer-input-label { font-size: 12px; }
+  .trainer-panel textarea {
+    min-height: 120px;
+    padding: 13px;
+    font-size: 16px;
+    line-height: 1.6;
+    border-radius: 9px;
+  }
+  .trainer-actions { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  .trainer-actions .button { width: 100%; min-height: 46px; font-size: 12px; }
+  .trainer-answer p { font-size: 15px; line-height: 1.75; }
+  .trainer-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .trainer-grade > span { grid-column: 1 / -1; width: auto; margin: 0 0 3px; }
+  .grade-button { min-height: 44px; padding: 10px 8px; line-height: 1.35; }
+  .coach-note { font-size: 12px; line-height: 1.75; }
+
+  .library-tools { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .search-box { grid-column: 1 / -1; min-height: 48px; }
+  .search-box input { min-height: 46px; font-size: 16px; }
+  .library-tools select { min-height: 46px; width: 100%; padding: 9px 8px; font-size: 13px; }
+  .results-line { font-size: 10px; line-height: 1.5; align-items: flex-start; }
+  .results-line span:last-child { max-width: 48%; }
+  .question-list { gap: 8px; }
+  .question-item { border-radius: 10px; }
+  .question-item summary {
+    min-height: 60px;
+    grid-template-columns: 25px minmax(0, 1fr) 14px;
+    gap: 9px;
+    padding: 13px 11px;
+  }
+  .item-dot { width: 25px; height: 25px; }
+  .item-question { font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+  .item-meta { gap: 7px; margin-top: 7px; }
+  .item-category { font-size: 10px; line-height: 1.4; }
+  .status-tag { font-size: 9px; }
+  .item-answer { padding: 0 13px 15px 45px; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
+  .item-actions { flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+  .mini-action { min-height: 36px; padding: 8px 10px; font-size: 10px; }
+  .load-more { min-height: 46px; width: 100%; }
+
+  .plan-intro { align-items: start; grid-template-columns: 58px minmax(0, 1fr); gap: 13px; padding: 17px 14px; }
+  .plan-big-number { font-size: 42px; padding-top: 3px; }
+  .plan-intro h3 { font-size: 16px; line-height: 1.45; }
+  .plan-intro p { font-size: 12px; line-height: 1.7; }
+  .day-grid { gap: 11px; }
+  .day-card { padding: 18px 15px; border-radius: 12px; }
+  .day-card h3 { font-size: 21px; }
+  .day-subtitle { font-size: 11px; line-height: 1.5; margin-bottom: 20px; }
+  .schedule-item { grid-template-columns: 74px minmax(0, 1fr); gap: 10px; margin-bottom: 19px; }
+  .schedule-time { font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+  .schedule-item strong { font-size: 12px; line-height: 1.5; }
+  .schedule-item p { font-size: 12px; line-height: 1.7; }
+  .plan-check { min-height: 44px; align-items: flex-start; padding: 12px 0 3px; font-size: 12px; line-height: 1.6; }
+  .plan-check input { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 2px; }
+  .techniques { margin-top: 30px; }
+  .technique-grid { gap: 8px; }
+  .technique-card { padding: 15px 12px; border-radius: 10px; }
+  .technique-card h3 { font-size: 14px; line-height: 1.4; margin: 12px 0 8px; }
+  .technique-card p { font-size: 12px; line-height: 1.7; margin-bottom: 13px; }
+  .tech-label { font-size: 9px; line-height: 1.5; }
+  .plan-footer { gap: 10px; padding: 15px 13px; }
+  .plan-footer p { font-size: 12px; line-height: 1.7; }
+
+  .footer { gap: 9px 14px; margin-top: 35px; padding: 20px 0 calc(22px + env(safe-area-inset-bottom)); font-size: 9px; line-height: 1.6; }
+  .reset-button { min-height: 40px; padding: 9px 0; font-size: 10px; text-align: right; }
+  .toast { bottom: calc(12px + env(safe-area-inset-bottom)); width: max-content; max-width: calc(100vw - 24px); text-align: center; line-height: 1.5; }
+}
+
+@media (max-width: 390px) {
+  .app-shell { padding-inline: 12px; }
+  .brand { gap: 8px; }
+  .brand-copy strong { font-size: 10px; letter-spacing: 1.5px; }
+  .brand-copy small { font-size: 8px; letter-spacing: .9px; }
+  .brand-mark { width: 35px; height: 35px; }
+  .hero-stamp { column-gap: 9px; padding: 14px 12px; }
+  .stamp-note { font-size: 11px; }
+  .stat-card { gap: 7px; padding: 10px 8px; }
+  .stat-icon { flex-basis: 27px; height: 27px; }
+  .stat-card strong { font-size: 19px; }
+  .stat-card span:not(.stat-icon) { font-size: 10px; }
+  .tab { gap: 6px; font-size: 11px; }
+  .flashcard { padding-inline: 16px; }
+  .card-question { font-size: 21px; }
+  .rating { padding-inline: 9px; gap: 7px; }
+  .rating strong { font-size: 11px; }
+  .rating small { font-size: 9px; }
+  .library-tools select { font-size: 12px; }
+  .technique-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .technique-card { padding-inline: 10px; }
+}
+
+@media (max-width: 340px) {
+  .top-meta .date-pill { display: none; }
+  .stamp-note { font-size: 10px; }
+  .tab { padding-inline: 5px; font-size: 10px; }
+  .deck-controls { gap: 6px; }
+  .circle-button { flex-basis: 40px; width: 40px; height: 40px; }
+  .deck-controls .button { font-size: 11px; padding-inline: 8px; }
+  .rating-row { grid-template-columns: 1fr; }
+  .rating-bookmark { grid-column: auto; }
+  .technique-grid { grid-template-columns: 1fr; }
+}
+
+@media (hover: none) {
+  .button:hover, .circle-button:hover { transform: none; }
+  .button, .circle-button, .rating, .grade-button, .mini-action { transition: background-color .15s, border-color .15s; }
+  .button:active, .circle-button:active, .rating:active, .grade-button:active, .mini-action:active { transform: scale(.99); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
