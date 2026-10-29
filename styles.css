@@ -244,3 +244,25 @@ button, .plan-check, .question-item summary { touch-action: manipulation; }
   .flashcard { transition: box-shadow .18s ease, border-radius .18s ease; }
   .flashcard:hover { box-shadow: 0 20px 52px #0003; }
 }
+
+
+/* Compact header count after removing promotional copy */
+.hero-stamp {
+  min-height: 190px;
+  justify-content: center;
+  gap: 3px;
+}
+.stamp-divider { display: none; }
+@media (max-width: 650px) {
+  .hero-stamp {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 14px 16px;
+  }
+  .stamp-small { width: 100%; }
+  .hero-stamp strong { margin: 0; font-size: 40px; line-height: 1.05; }
+  .stamp-label { margin: 0; }
+}
