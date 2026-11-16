@@ -1,7 +1,7 @@
 'use strict';
 
 const DATA_URL = 'data/variants.json?v=20261117-1';
-const STORAGE_KEY = 'history-lab-variants-v2';
+const STORAGE_KEY = 'history-lab-colloquium-v1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -417,8 +417,8 @@ function renderLibrary() {
     details.append(summary, answer);
 
     if (showAllAnswers) details.open = true;
-    summary.addEventListener('click', () => {
-      if (!showAllAnswers) answer.hidden = details.open;
+    details.addEventListener('toggle', () => {
+      if (!showAllAnswers) answer.hidden = !details.open;
     });
 
     list.append(details);
@@ -452,6 +452,7 @@ function wireEvents() {
     if (event.target !== flashcard) return;
     if (event.key === 'Enter' || event.code === 'Space') {
       event.preventDefault();
+      event.stopPropagation();
       flipCard();
     }
   });
