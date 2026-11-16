@@ -23,15 +23,18 @@ const state = loadState();
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const known = Array.isArray(saved.known) ? saved.known : [];
+    const review = Array.isArray(saved.review) ? saved.review : [];
     return {
-      known: Array.isArray(saved.known) ? saved.known : [],
-      review: Array.isArray(saved.review) ? saved.review : [],
+      known,
+      review,
+      attempted: Array.isArray(saved.attempted) ? saved.attempted : unique([...known, ...review]),
       favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
       activeVariant: saved.activeVariant === 'all' ? 'all' : (Number(saved.activeVariant) || 1),
       deckMode: saved.deckMode === 'ordered' ? 'ordered' : 'shuffle'
     };
   } catch {
-    return { known: [], review: [], favorites: [], activeVariant: 1, deckMode: 'shuffle' };
+    return { known: [], review: [], attempted: [], favorites: [], activeVariant: 1, deckMode: 'shuffle' };
   }
 }
 
@@ -41,6 +44,7 @@ function saveState() {
       known: state.known,
       review: state.review,
       favorites: state.favorites,
+      attempted: state.attempted,
       activeVariant,
       deckMode
     }));
@@ -96,6 +100,10 @@ function isFavorite(id) {
   return state.favorites.includes(id);
 }
 
+function isAttempted(id) {
+  return state.attempted.includes(id);
+}
+
 function currentVariantQuestions() {
   const selected = activeVariant === 'all'
     ? questions
@@ -131,18 +139,20 @@ function toast(message) {
 function updateStats() {
   const total = questions.length;
   const knownCount = questions.filter(question => isKnown(question.id)).length;
-  const percentage = total ? Math.round((knownCount / total) * 100) : 0;
+  const attemptedCount = questions.filter(question => isAttempted(question.id)).length;
+  const percentage = total ? Math.round((attemptedCount / total) * 100) : 0;
   const selected = currentVariantQuestions();
   const variantKnown = selected.filter(question => isKnown(question.id)).length;
+  const variantAttempted = selected.filter(question => isAttempted(question.id)).length;
 
   $('#stat-known').textContent = String(knownCount);
+  $('#stat-attempted').textContent = String(attemptedCount);
   $('#stat-total').textContent = String(total);
   $('#stat-percent').textContent = percentage + '%';
   $('#progress-fill').style.width = percentage + '%';
 
-  $('#variant-summary').textContent = activeVariant === 'all'
-    ? selected.length + ' карточек · ' + variantKnown + ' выучено'
-    : selected.length + ' карточек · ' + variantKnown + ' из ' + selected.length + ' выучено';
+  $('#variant-summary').textContent = 'Прорешано ' + variantAttempted + '/' + selected.length +
+    ' · выучено ' + variantKnown;
 }
 
 function renderVariantPicker() {
@@ -162,7 +172,7 @@ function renderVariantPicker() {
     const optionQuestions = option.id === 'all'
       ? questions
       : questions.filter(question => question.variantId === option.id);
-    const knownCount = optionQuestions.filter(question => isKnown(question.id)).length;
+    const attemptedCount = optionQuestions.filter(question => isAttempted(question.id)).length;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'variant-option' + (option.id === 'all' ? ' all-option' : '') + (option.id === activeVariant ? ' active' : '');
@@ -172,7 +182,7 @@ function renderVariantPicker() {
     const title = document.createElement('strong');
     title.textContent = option.label;
     const count = document.createElement('span');
-    count.textContent = knownCount + ' / ' + option.count;
+    count.textContent = attemptedCount + ' / ' + option.count;
     button.append(title, count);
     button.addEventListener('click', () => selectVariant(option.id));
     container.append(button);
@@ -185,7 +195,7 @@ function selectVariant(variantId) {
   activeVariant = variantId === 'all' ? 'all' : Number(variantId);
   deck = makeDeck();
   deckPosition = 0;
-  trainerQueue = shuffle(currentVariantQuestions());
+  trainerQueue = makeDeck();
   trainerPosition = 0;
   libraryLimit = activeVariant === 'all' ? 120 : 30;
   renderVariantPicker();
@@ -196,9 +206,13 @@ function selectVariant(variantId) {
   saveState();
 }
 
+function arrangeDeck(items) {
+  const ordered = [...items].sort((a, b) => a.variantId - b.variantId || a.number - b.number);
+  return deckMode === 'ordered' ? ordered : shuffle(ordered);
+}
+
 function makeDeck() {
-  const items = currentVariantQuestions();
-  return deckMode === 'ordered' ? items : shuffle(items);
+  return arrangeDeck(currentVariantQuestions());
 }
 
 function renderDeckModes() {
@@ -215,8 +229,12 @@ function setDeckMode(mode) {
   deckMode = mode;
   deck = makeDeck();
   deckPosition = 0;
+  trainerQueue = makeDeck();
+  trainerPosition = 0;
+  showDeckSession();
   renderDeckModes();
   renderCard();
+  renderTrainer();
   saveState();
 }
 
@@ -245,7 +263,8 @@ function renderCard() {
   $('#bookmark-symbol').textContent = isFavorite(question.id) ? '★' : '☆';
   $('#bookmark-label').textContent = isFavorite(question.id) ? 'В избранном' : 'В избранное';
   $('#prev-btn').disabled = deck.length < 2 || deckPosition === 0;
-  $('#next-btn').disabled = deck.length < 2 || deckPosition === deck.length - 1;
+  $('#next-btn').disabled = deck.length === 0;
+  $('#next-btn').setAttribute('aria-label', deckPosition === deck.length - 1 ? 'Завершить колоду' : 'Следующая карточка');
   $('#flashcard').setAttribute('aria-label', question.question + '. Нажми, чтобы открыть ответ.');
 }
 
@@ -264,8 +283,55 @@ function flipCard() {
 
 function moveCard(delta) {
   const nextPosition = deckPosition + delta;
-  if (nextPosition < 0 || nextPosition >= deck.length) return;
+  if (nextPosition < 0) return;
+  if (nextPosition >= deck.length) {
+    showDeckCompletion();
+    return;
+  }
   deckPosition = nextPosition;
+  renderCard();
+}
+
+function showDeckSession() {
+  $('#deck-session').hidden = false;
+  $('#deck-complete').hidden = true;
+}
+
+function showDeckCompletion() {
+  const selected = currentVariantQuestions();
+  const knownCount = selected.filter(question => isKnown(question.id)).length;
+  const attemptedCount = selected.filter(question => isAttempted(question.id)).length;
+  const reviewCount = selected.filter(question => needsReview(question.id)).length;
+  const unlearnedCount = selected.filter(question => !isKnown(question.id)).length;
+  const untouchedCount = selected.filter(question => !isAttempted(question.id)).length;
+
+  $('#complete-attempted').textContent = attemptedCount + ' / ' + selected.length;
+  $('#complete-known').textContent = String(knownCount);
+  $('#complete-review').textContent = String(reviewCount);
+  $('#complete-untouched').textContent = String(untouchedCount);
+  $('#restart-unlearned-count').textContent = String(unlearnedCount);
+  $('#restart-unlearned').disabled = unlearnedCount === 0;
+
+  $('#deck-session').hidden = true;
+  $('#deck-complete').hidden = false;
+}
+
+function restartWholeDeck() {
+  deck = makeDeck();
+  deckPosition = 0;
+  showDeckSession();
+  renderCard();
+}
+
+function restartUnlearnedDeck() {
+  const unlearned = currentVariantQuestions().filter(question => !isKnown(question.id));
+  if (!unlearned.length) {
+    toast('Все карточки этого набора выучены');
+    return;
+  }
+  deck = arrangeDeck(unlearned);
+  deckPosition = 0;
+  showDeckSession();
   renderCard();
 }
 
@@ -273,6 +339,7 @@ function rateCard(markKnown) {
   const question = currentCard();
   if (!question) return;
 
+  state.attempted = unique([...state.attempted, question.id]);
   if (markKnown) {
     state.known = unique([...state.known, question.id]);
     state.review = state.review.filter(id => id !== question.id);
@@ -287,7 +354,7 @@ function rateCard(markKnown) {
   renderVariantPicker();
   renderLibrary();
   if (deckPosition < deck.length - 1) moveCard(1);
-  else toast('Колода пройдена');
+  else showDeckCompletion();
 }
 
 function toggleFavorite(id) {
@@ -305,7 +372,7 @@ function toggleFavorite(id) {
 }
 
 function buildTrainer() {
-  trainerQueue = shuffle(currentVariantQuestions());
+  trainerQueue = makeDeck();
   trainerPosition = 0;
   renderTrainer();
 }
@@ -341,6 +408,7 @@ function gradeTrainer(wasKnown) {
   const question = trainerCurrent();
   if (!question) return;
 
+  state.attempted = unique([...state.attempted, question.id]);
   if (wasKnown) {
     state.known = unique([...state.known, question.id]);
     state.review = state.review.filter(id => id !== question.id);
@@ -420,6 +488,7 @@ function renderLibrary() {
     knownButton.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
+      state.attempted = unique([...state.attempted, question.id]);
       if (isKnown(question.id)) {
         state.known = state.known.filter(id => id !== question.id);
         state.review = unique([...state.review, question.id]);
@@ -465,6 +534,7 @@ function setView(view) {
   $$('.view').forEach(section => section.classList.toggle('active', section.id === 'view-' + view));
   if (view === 'trainer') renderTrainer();
   if (view === 'library') renderLibrary();
+  if (view === 'probability') renderProbability(true);
 }
 
 function wireEvents() {
@@ -494,6 +564,8 @@ function wireEvents() {
   });
   $('#prev-btn').addEventListener('click', () => moveCard(-1));
   $('#next-btn').addEventListener('click', () => moveCard(1));
+  $('#restart-all').addEventListener('click', restartWholeDeck);
+  $('#restart-unlearned').addEventListener('click', restartUnlearnedDeck);
   $('#flip-btn').addEventListener('click', flipCard);
   $('#again-btn').addEventListener('click', () => rateCard(false));
   $('#known-btn').addEventListener('click', () => rateCard(true));
@@ -509,6 +581,9 @@ function wireEvents() {
   $('#trainer-no').addEventListener('click', () => gradeTrainer(false));
   $('#trainer-yes').addEventListener('click', () => gradeTrainer(true));
   $('#trainer-skip').addEventListener('click', advanceTrainer);
+
+  $('#probability-slider').addEventListener('input', () => renderProbability(false));
+  $('#probability-use-progress').addEventListener('click', () => renderProbability(true));
 
   $('#search-input').addEventListener('input', () => {
     libraryLimit = activeVariant === 'all' ? 120 : 30;
@@ -531,6 +606,7 @@ function wireEvents() {
     if (!confirm('Сбросить прогресс по всем четырём вариантам и избранное?')) return;
     state.known = [];
     state.review = [];
+    state.attempted = [];
     state.favorites = [];
     saveState();
     renderVariantPicker();
@@ -538,6 +614,8 @@ function wireEvents() {
     renderCard();
     renderTrainer();
     renderLibrary();
+    renderProbability(true);
+    showDeckSession();
     toast('Прогресс сброшен');
   });
 
@@ -592,13 +670,15 @@ async function init() {
     deckMode = state.deckMode === 'ordered' ? 'ordered' : 'shuffle';
 
     deck = makeDeck();
-    trainerQueue = shuffle(currentVariantQuestions());
+    trainerQueue = makeDeck();
     renderVariantPicker();
     renderDeckModes();
     renderCard();
     renderTrainer();
     updateStats();
     renderLibrary();
+    renderProbability(true);
+    showDeckSession();
     wireEvents();
   } catch (error) {
     console.error(error);
