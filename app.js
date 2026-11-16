@@ -1,6 +1,6 @@
 'use strict';
 
-const DATA_URL = 'data/variants.json?v=20261117-short';
+const DATA_URL = 'data/variants.json?v=20261117-history-corrections';
 const STORAGE_KEY = 'history-lab-colloquium-v1';
 const THEME_KEY = 'history-lab-theme-v1';
 const $ = (selector, root = document) => root.querySelector(selector);
