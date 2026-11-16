@@ -3,191 +3,131 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101b2a">
-  <meta name="description" content="Тренажёр по истории России XVIII века: четыре варианта по 30 вопросов, карточки, самопроверка и сохранение прогресса.">
-  <title>History Lab — тест № 3 по истории России</title>
-  <link rel="stylesheet" href="styles.css?v=20261117-variants">
-  <script src="app.js?v=20261117-2" defer></script>
+  <meta name="theme-color" content="#f4f6f4">
+  <meta name="description" content="Четыре варианта теста по истории России. 119 исходных вопросов и ответов, случайный порядок карточек и сохранение прогресса.">
+  <title>History Lab — карточки по истории России</title>
+  <link rel="stylesheet" href="styles.css?v=20261117-clean">
+  <script src="app.js?v=20261117-clean" defer></script>
 </head>
-<body>
-  <div class="ambient ambient-one" aria-hidden="true"></div>
-  <div class="ambient ambient-two" aria-hidden="true"></div>
+<body data-theme="light">
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#home" aria-label="History Lab — главная">
+      <a class="brand" href="#" aria-label="History Lab">
         <span class="brand-mark">H<span>·</span></span>
-        <span class="brand-copy"><strong>HISTORY LAB</strong><small>ТРЕНАЖЁР ПО ИСТОРИИ</small></span>
+        <span class="brand-copy"><strong>HISTORY LAB</strong><small>ИСТОРИЯ РОССИИ</small></span>
       </a>
-      <div class="top-meta"><span class="live-dot"></span><span>Тест № 3 · Россия XVIII века</span><span class="date-pill">4 ВАРИАНТА</span></div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Включить тёмную тему" title="Тёмная тема">☾</button>
     </header>
 
     <main>
-      <section class="hero" id="home">
-        <div class="hero-copy">
-          <div class="eyebrow"><span class="eyebrow-line"></span> ИСТОРИЯ РОССИИ · XVII–XVIII ВЕКА</div>
-          <h1>Проверь,<br><em>что помнишь.</em></h1>
-          <p class="hero-description">Четыре отдельных варианта. В каждом — 30 вопросов в исходном порядке, карточки для повторения и режим самостоятельной проверки.</p>
-          <div class="hero-actions">
-            <button class="button button-primary" data-go="cards">Начать вариант <span aria-hidden="true">↗</span></button>
-            <button class="button button-quiet" data-go="trainer">Проверить себя <span aria-hidden="true">→</span></button>
-          </div>
-        </div>
-        <div class="hero-stamp" aria-label="120 вопросов">
-          <span class="stamp-small">ЕДИНЫЙ НАБОР</span>
-          <strong id="hero-total">120</strong>
-          <span class="stamp-label">ВОПРОСОВ</span>
-          <span class="stamp-note">4 × 30<br>каждый вариант отдельно</span>
-        </div>
-      </section>
-
-      <section class="dashboard" aria-label="Общий прогресс">
-        <div class="stat-card"><span class="stat-icon">◈</span><div><strong id="stat-total">120</strong><span>всего вопросов</span></div></div>
-        <div class="stat-card"><span class="stat-icon icon-green">✓</span><div><strong id="stat-known">0</strong><span>знаю уверенно</span></div></div>
-        <div class="stat-card"><span class="stat-icon icon-orange">↻</span><div><strong id="stat-review">120</strong><span>нужно повторить</span></div></div>
-        <div class="stat-card progress-stat">
-          <div class="stat-title"><span>Общий прогресс</span><strong id="stat-percent">0%</strong></div>
-          <div class="progress-track"><span id="progress-fill"></span></div>
-          <small>Прогресс считается по всем четырём вариантам.</small>
-        </div>
-      </section>
-
-      <nav class="tabs" aria-label="Разделы тренажёра">
-        <button class="tab active" data-view="cards"><span>01</span> Карточки</button>
-        <button class="tab" data-view="trainer"><span>02</span> Решать вопросы</button>
-        <button class="tab" data-view="library"><span>03</span> Список вопросов</button>
-        <button class="tab" data-view="plan"><span>04</span> План подготовки</button>
-      </nav>
-
       <section class="variant-panel" aria-label="Выбор варианта">
         <div class="variant-panel-heading">
-          <div><div class="eyebrow">ВЫБЕРИ НАБОР</div><h2>Какой вариант решаем?</h2></div>
-          <span id="variant-summary">Вариант 1: 0 из 30 отмечено «Знаю»</span>
+          <div class="eyebrow">ВАРИАНТ</div>
+          <span id="variant-summary">29 карточек · 0 из 29 выучено</span>
         </div>
         <div class="variant-picker" id="variant-picker">
-          <button class="variant-option active" type="button"><strong>Вариант 1</strong><span>загрузка…</span></button>
-          <button class="variant-option" type="button"><strong>Вариант 2</strong><span>загрузка…</span></button>
-          <button class="variant-option" type="button"><strong>Вариант 3</strong><span>загрузка…</span></button>
-          <button class="variant-option" type="button"><strong>Вариант 4</strong><span>загрузка…</span></button>
-        </div>
-        <p class="variant-note" id="variant-note" hidden></p>
-      </section>
-
-      <section class="view active" id="view-cards" aria-labelledby="cards-heading">
-        <div class="section-heading">
-          <div><div class="eyebrow">РЕЖИМ 01</div><h2 id="cards-heading">Карточки <span class="heading-mark">/</span> вспоминай активно</h2></div>
-          <div class="heading-actions">
-            <button class="text-button" id="ordered-btn">№ По порядку</button>
-            <button class="text-button" id="shuffle-btn">⤨ Перемешать</button>
-          </div>
-        </div>
-        <div class="study-layout">
-          <aside class="side-note">
-            <span class="side-number">A.</span>
-            <h3>Сначала ответь сам.</h3>
-            <p>Прочитай вопрос, сформулируй ответ вслух и только потом открывай карточку. Варианты не смешиваются между собой.</p>
-            <div class="side-rule"></div>
-            <div class="key-line"><span class="key-chip">ПРОБЕЛ</span><span>показать ответ</span></div>
-            <div class="key-line"><span class="key-chip">← →</span><span>сменить карточку</span></div>
-          </aside>
-          <div class="deck-column">
-            <div class="deck-topline"><span id="deck-category">ВАРИАНТ 1</span><span class="deck-count"><strong id="card-number">01</strong><span> / </span><span id="deck-total">30</span></span></div>
-            <div class="flashcard" id="flashcard" role="group" tabindex="0" aria-label="Учебная карточка. Нажми, чтобы показать или скрыть ответ." aria-describedby="card-hint" aria-keyshortcuts="Space Enter">
-              <div class="card-top"><span class="card-label" id="card-label">ВОПРОС 01</span><span class="card-symbol" aria-hidden="true">✳</span></div>
-              <div class="card-question" id="card-question">Загружаем первый вариант…</div>
-              <div class="card-answer" id="card-answer" hidden><span class="answer-label">ОТВЕТ</span><p id="answer-text"></p></div>
-              <div class="card-bottom"><span id="card-hint">Попробуй ответить, не подглядывая</span><button class="reveal-inline" id="reveal-btn">Открыть ответ <span>↓</span></button></div>
-            </div>
-            <div class="deck-controls">
-              <button class="circle-button" id="prev-btn" aria-label="Предыдущая карточка" title="Предыдущая">←</button>
-              <button class="button button-outline" id="flip-btn">Показать ответ <span aria-hidden="true">↘</span></button>
-              <button class="circle-button" id="next-btn" aria-label="Следующая карточка" title="Следующая">→</button>
-            </div>
-            <div class="card-position" id="card-position-label">Карточка 1 из 30</div>
-            <div class="rating-row">
-              <button class="rating rating-again" id="again-btn"><span>↻</span><span><strong>Повторить</strong><small>вернуть позже</small></span></button>
-              <button class="rating rating-known" id="known-btn"><span>✓</span><span><strong>Знаю</strong><small>ответил без подсказки</small></span></button>
-              <button class="rating rating-bookmark" id="bookmark-btn"><span id="bookmark-symbol">☆</span><span><strong>В избранное</strong><small id="bookmark-label">сохранить карточку</small></span></button>
-            </div>
-          </div>
+          <button class="variant-option active" type="button"><strong>1</strong><span>29</span></button>
+          <button class="variant-option" type="button"><strong>2</strong><span>30</span></button>
+          <button class="variant-option" type="button"><strong>3</strong><span>30</span></button>
+          <button class="variant-option" type="button"><strong>4</strong><span>30</span></button>
         </div>
       </section>
 
-      <section class="view" id="view-trainer" aria-labelledby="trainer-heading">
-        <div class="section-heading">
-          <div><div class="eyebrow">РЕЖИМ 02</div><h2 id="trainer-heading">Решать вопросы <span class="heading-mark">/</span> как на тесте</h2></div>
-          <span class="mode-chip">30 ВОПРОСОВ В ВАРИАНТЕ</span>
+      <section class="overall-progress" aria-label="Общий прогресс">
+        <div class="progress-copy">
+          <span>Выучено <strong id="stat-known">0</strong> из <strong id="stat-total">119</strong></span>
+          <strong id="stat-percent">0%</strong>
         </div>
+        <div class="progress-track"><span id="progress-fill"></span></div>
+      </section>
+
+      <nav class="tabs" aria-label="Разделы">
+        <button class="tab active" data-view="cards">Карточки</button>
+        <button class="tab" data-view="trainer">Самопроверка</button>
+        <button class="tab" data-view="library">Все вопросы</button>
+      </nav>
+
+      <section class="view active" id="view-cards" aria-label="Карточки">
+        <div class="deck-topline">
+          <span id="deck-category">ВАРИАНТ 1</span>
+          <span class="deck-count"><strong id="card-number">01</strong><span> / </span><span id="deck-total">29</span></span>
+          <button class="text-button" id="shuffle-btn" type="button" title="Перемешать вопросы">Перемешать ↻</button>
+        </div>
+
+        <div class="flashcard" id="flashcard" role="group" tabindex="0" aria-label="Карточка вопроса. Нажми на карточку, чтобы открыть ответ." aria-keyshortcuts="Space Enter">
+          <div class="card-top">
+            <span class="card-label" id="card-label">ВОПРОС 1</span>
+            <span class="card-mark" aria-hidden="true">H.</span>
+          </div>
+          <div class="card-question" id="card-question">Загрузка вопросов…</div>
+          <div class="card-answer" id="card-answer" hidden>
+            <span class="answer-label">ОТВЕТ</span>
+            <p id="answer-text"></p>
+          </div>
+          <div class="card-action">
+            <button class="button button-reveal" id="flip-btn" type="button">Показать ответ</button>
+          </div>
+        </div>
+
+        <div class="deck-controls">
+          <button class="circle-button" id="prev-btn" type="button" aria-label="Предыдущая карточка">←</button>
+          <button class="circle-button" id="next-btn" type="button" aria-label="Следующая карточка">→</button>
+        </div>
+
+        <div class="rating-row">
+          <button class="rating rating-again" id="again-btn" type="button"><span class="rating-symbol">↻</span><strong>Повторить</strong></button>
+          <button class="rating rating-known" id="known-btn" type="button"><span class="rating-symbol">✓</span><strong>Знаю</strong></button>
+          <button class="rating rating-bookmark" id="bookmark-btn" type="button"><span class="rating-symbol" id="bookmark-symbol">☆</span><strong id="bookmark-label">В избранное</strong></button>
+        </div>
+      </section>
+
+      <section class="view" id="view-trainer" aria-label="Самопроверка">
         <div class="trainer-panel">
-          <div class="trainer-head"><span class="question-index" id="trainer-index">ВОПРОС 1 / 30</span><span id="trainer-category">ВАРИАНТ 1</span></div>
-          <h3 id="trainer-question">Подготавливаем вопрос…</h3>
-          <label class="answer-input-label" for="my-answer">Твой ответ — сформулируй своими словами</label>
-          <textarea id="my-answer" rows="4" placeholder="Вспомни имя, дату, причины и последствия…"></textarea>
+          <div class="trainer-head">
+            <span id="trainer-index">1 / 29</span>
+            <span id="trainer-category">ВАРИАНТ 1</span>
+          </div>
+          <h2 id="trainer-question">Загрузка вопроса…</h2>
+          <textarea id="my-answer" rows="4" aria-label="Твой ответ" placeholder="Твой ответ…"></textarea>
           <div class="trainer-actions">
-            <button class="button button-primary" id="trainer-reveal">Сверить с ответом</button>
-            <button class="button button-quiet" id="trainer-skip">Пропустить ↗</button>
+            <button class="button button-reveal" id="trainer-reveal" type="button">Показать ответ</button>
+            <button class="button button-secondary" id="trainer-skip" type="button">Пропустить</button>
           </div>
           <div class="trainer-answer" id="trainer-answer" hidden>
-            <div class="answer-label">ПРАВИЛЬНЫЙ ОТВЕТ</div>
+            <span class="answer-label">ОТВЕТ</span>
             <p id="trainer-answer-text"></p>
-            <div class="trainer-grade"><span>Как получилось?</span><button class="grade-button grade-no" id="trainer-no">Нужно повторить</button><button class="grade-button grade-yes" id="trainer-yes">Вспомнил сам</button></div>
+            <div class="trainer-grade">
+              <button class="grade-button grade-no" id="trainer-no" type="button">Повторить</button>
+              <button class="grade-button grade-yes" id="trainer-yes" type="button">Знаю</button>
+            </div>
           </div>
         </div>
-        <p class="coach-note"><strong>Правило:</strong> засчитывай ответ только тогда, когда смог сформулировать его до сверки. После 30-го вопроса цикл начнётся сначала; результаты сохраняются отдельно для каждого варианта.</p>
       </section>
 
-      <section class="view" id="view-library" aria-labelledby="library-heading">
-        <div class="section-heading">
-          <div><div class="eyebrow">РЕЖИМ 03</div><h2 id="library-heading">Список вопросов <span class="heading-mark">/</span> все 30 карточек</h2></div>
-          <button class="text-button" id="toggle-all-answers">Показать все ответы</button>
-        </div>
-        <div class="library-tools">
-          <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Найти по вопросу или ответу…" aria-label="Поиск по текущему варианту"></label>
-          <select id="status-filter" aria-label="Фильтр по прогрессу">
-            <option value="all">Любой статус</option><option value="new">Не повторял</option><option value="known">Знаю уверенно</option><option value="review">Повторить</option><option value="favorites">Избранное</option>
+      <section class="view" id="view-library" aria-label="Все вопросы">
+        <div class="library-heading">
+          <input id="search-input" type="search" placeholder="Поиск по вопросам и ответам…" aria-label="Поиск по вопросам и ответам">
+          <select id="status-filter" aria-label="Фильтр по статусу">
+            <option value="all">Все вопросы</option>
+            <option value="new">Не повторял</option>
+            <option value="known">Знаю</option>
+            <option value="review">Повторить</option>
+            <option value="favorites">Избранное</option>
           </select>
+          <button class="text-button" id="toggle-all-answers" type="button">Показать все ответы</button>
         </div>
-        <div class="results-line"><span id="library-count">30 из 30 вопросов</span><span>Порядок исходного варианта</span></div>
+        <div class="results-line"><span id="library-count">29 вопросов</span></div>
         <div class="question-list" id="question-list"></div>
-        <button class="button button-outline load-more" id="load-more">Показать ещё</button>
+        <button class="button button-secondary load-more" id="load-more" type="button">Показать ещё</button>
       </section>
 
-      <section class="view" id="view-plan" aria-labelledby="plan-heading">
-        <div class="section-heading"><div><div class="eyebrow">РЕЖИМ 04</div><h2 id="plan-heading">План подготовки <span class="heading-mark">/</span> четыре варианта</h2></div><span class="mode-chip">120 ВОПРОСОВ</span></div>
-        <div class="plan-intro"><div class="plan-big-number">4<span>×30</span></div><div><h3>Не смешивай варианты при первом проходе.</h3><p>Сначала реши каждый тест отдельно в исходном порядке. После первого прохода возвращайся к сложным вопросам, а затем перемешивай карточки для финальной самопроверки.</p></div></div>
-        <div class="day-grid">
-          <article class="day-card">
-            <div class="day-card-top"><span class="day-tag">ПЕРВЫЙ ПРОХОД</span><span class="day-ordinal">01</span></div>
-            <h3>Разобрать варианты</h3><p class="day-subtitle">Идти по порядку, фиксировать ошибки</p>
-            <div class="schedule-item"><span class="schedule-time">30–40 мин</span><div><strong>Вариант 1 и вариант 2</strong><p>Пройди по 30 карточек. Не открывай ответ сразу, отмечай сомнительные вопросы как «Повторить».</p></div></div>
-            <div class="schedule-item"><span class="schedule-time">10 мин</span><div><strong>Перерыв и разбор ошибок</strong><p>Выпиши даты, фамилии и термины, которые перепутались.</p></div></div>
-            <div class="schedule-item"><span class="schedule-time">30–40 мин</span><div><strong>Вариант 3 и вариант 4</strong><p>Реши оставшиеся 60 вопросов отдельно, не перескакивая между наборами.</p></div></div>
-            <label class="plan-check"><input type="checkbox" data-task="variants-first-pass"><span>Я прошёл все четыре варианта по порядку</span></label>
-            <label class="plan-check"><input type="checkbox" data-task="variants-errors"><span>Я отметил вопросы, которые нужно повторить</span></label>
-          </article>
-          <article class="day-card day-card-tomorrow">
-            <div class="day-card-top"><span class="day-tag">ПОВТОРЕНИЕ</span><span class="day-ordinal">02</span></div>
-            <h3>Закрепить знания</h3><p class="day-subtitle">Слабые места + случайная проверка</p>
-            <div class="schedule-item"><span class="schedule-time">2 × 25 мин</span><div><strong>Повторить отмеченные вопросы</strong><p>Выбирай каждый вариант отдельно и возвращайся только к карточкам со статусом «Повторить».</p></div></div>
-            <div class="schedule-item"><span class="schedule-time">30 мин</span><div><strong>Устная самопроверка</strong><p>Перемешай карточки выбранного варианта и отвечай за 30–60 секунд.</p></div></div>
-            <div class="schedule-item"><span class="schedule-time">20 мин</span><div><strong>Сверить даты и причинно-следственные связи</strong><p>Особенно внимательно проверь похожие даты, имена, договоры и командные роли.</p></div></div>
-            <label class="plan-check"><input type="checkbox" data-task="variants-random"><span>Я прошёл случайную проверку по каждому варианту</span></label>
-            <label class="plan-check"><input type="checkbox" data-task="variants-final"><span>Я повторил вопросы, в которых ошибался</span></label>
-          </article>
-        </div>
-        <div class="techniques">
-          <div class="eyebrow">КАК ПОЛЬЗОВАТЬСЯ ТРЕНАЖЁРОМ</div>
-          <div class="technique-grid">
-            <article class="technique-card"><span class="tech-num">01</span><h3>Активное вспоминание</h3><p>Сначала дай ответ вслух или напиши его в поле. Только потом открывай подсказку.</p><span class="tech-label">КАЖДАЯ КАРТОЧКА</span></article>
-            <article class="technique-card"><span class="tech-num">02</span><h3>Отмечай честно</h3><p>«Знаю» — если ответил сам. «Повторить» — если ответ вспомнился только после открытия.</p><span class="tech-label">ПРОГРЕСС ПО ВАРИАНТАМ</span></article>
-            <article class="technique-card"><span class="tech-num">03</span><h3>Сначала порядок</h3><p>Первый проход делай по номерам, чтобы не пропустить вопросы. Случайный порядок — для закрепления.</p><span class="tech-label">30 ВОПРОСОВ В НАБОРЕ</span></article>
-            <article class="technique-card"><span class="tech-num">04</span><h3>Проверяй формулировку</h3><p>В истории важны не только фамилия и дата, но и точная роль человека, причина события и его результат.</p><span class="tech-label">СМЫСЛ ВМЕСТО ЗУБРЁЖКИ</span></article>
-          </div>
-        </div>
-      </section>
-
-      <footer class="footer"><span>HISTORY LAB · ТЕСТ № 3</span><button id="reset-progress" class="reset-button">Сбросить прогресс</button><span>Прогресс сохраняется локально в браузере</span></footer>
+      <footer class="footer">
+        <span>HISTORY LAB</span>
+        <button id="reset-progress" class="reset-button" type="button">Сбросить прогресс</button>
+      </footer>
     </main>
   </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <noscript><div class="noscript">Для работы тренажёра включи JavaScript в браузере.</div></noscript>
 </body>
