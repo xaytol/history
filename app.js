@@ -189,6 +189,7 @@ function selectVariant(variantId) {
   trainerPosition = 0;
   libraryLimit = activeVariant === 'all' ? 120 : 30;
   renderVariantPicker();
+  renderDeckModes();
   renderCard();
   renderTrainer();
   renderLibrary();
@@ -593,6 +594,7 @@ async function init() {
     deck = makeDeck();
     trainerQueue = shuffle(currentVariantQuestions());
     renderVariantPicker();
+    renderDeckModes();
     renderCard();
     renderTrainer();
     updateStats();
