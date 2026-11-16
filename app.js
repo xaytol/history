@@ -162,7 +162,7 @@ function renderVariantPicker() {
     const knownCount = optionQuestions.filter(question => isKnown(question.id)).length;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'variant-option' + (option.id === activeVariant ? ' active' : '');
+    button.className = 'variant-option' + (option.id === 'all' ? ' all-option' : '') + (option.id === activeVariant ? ' active' : '');
     button.dataset.variant = String(option.id);
     button.setAttribute('aria-pressed', String(option.id === activeVariant));
 
