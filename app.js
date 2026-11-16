@@ -1,6 +1,6 @@
 'use strict';
 
-const DATA_URL = 'data/variants.json?v=20261117-2';
+const DATA_URL = 'data/variants.json?v=20261117-short';
 const STORAGE_KEY = 'history-lab-colloquium-v1';
 const THEME_KEY = 'history-lab-theme-v1';
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -26,11 +26,10 @@ function loadState() {
       known: Array.isArray(saved.known) ? saved.known : [],
       review: Array.isArray(saved.review) ? saved.review : [],
       favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
-      tasks: saved.tasks && typeof saved.tasks === 'object' ? saved.tasks : {},
-      activeVariant: Number(saved.activeVariant) || 1
+      activeVariant: saved.activeVariant === 'all' ? 'all' : (Number(saved.activeVariant) || 1)
     };
   } catch {
-    return { known: [], review: [], favorites: [], tasks: {}, activeVariant: 1 };
+    return { known: [], review: [], favorites: [], activeVariant: 1 };
   }
 }
 
@@ -40,11 +39,10 @@ function saveState() {
       known: state.known,
       review: state.review,
       favorites: state.favorites,
-      tasks: state.tasks,
       activeVariant
     }));
   } catch (error) {
-    console.warn('Не удалось сохранить прогресс в браузере:', error);
+    console.warn('Не удалось сохранить прогресс:', error);
   }
   updateStats();
 }
@@ -53,24 +51,21 @@ function applyTheme(theme) {
   const selected = theme === 'dark' ? 'dark' : 'light';
   document.body.dataset.theme = selected;
   const button = $('#theme-toggle');
-  if (button) {
-    button.textContent = selected === 'dark' ? '☀' : '☾';
-    button.setAttribute('aria-label', selected === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему');
-    button.setAttribute('title', selected === 'dark' ? 'Светлая тема' : 'Тёмная тема');
-  }
-  const meta = $('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', selected === 'dark' ? '#171e24' : '#f4f6f4');
+  button.textContent = selected === 'dark' ? '☀' : '☾';
+  button.setAttribute('aria-label', selected === 'dark' ? 'Светлая тема' : 'Тёмная тема');
+  button.setAttribute('title', selected === 'dark' ? 'Светлая тема' : 'Тёмная тема');
+  $('meta[name="theme-color"]').setAttribute('content', selected === 'dark' ? '#171e24' : '#f3f5f2');
 }
 
 function initTheme() {
-  let preferred = 'light';
+  let theme = 'light';
   try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === 'dark' || saved === 'light') preferred = saved;
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'dark' || stored === 'light') theme = stored;
   } catch (error) {
-    console.warn('Настройка темы недоступна:', error);
+    console.warn('Не удалось прочитать тему:', error);
   }
-  applyTheme(preferred);
+  applyTheme(theme);
   $('#theme-toggle').addEventListener('click', () => {
     const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
     applyTheme(next);
@@ -98,14 +93,19 @@ function isFavorite(id) {
   return state.favorites.includes(id);
 }
 
-function currentVariant() {
-  return variants.find(variant => variant.id === activeVariant);
+function currentVariantQuestions() {
+  const selected = activeVariant === 'all'
+    ? questions
+    : questions.filter(question => question.variantId === activeVariant);
+  return [...selected].sort((a, b) => a.variantId - b.variantId || a.number - b.number);
 }
 
-function currentVariantQuestions() {
-  return questions
-    .filter(question => question.variantId === activeVariant)
-    .sort((a, b) => a.number - b.number);
+function variantLabel() {
+  return activeVariant === 'all' ? 'ВСЕ ВАРИАНТЫ' : 'ВАРИАНТ ' + activeVariant;
+}
+
+function questionLabel(question) {
+  return 'ВАРИАНТ ' + question.variantId + ' · №' + question.number;
 }
 
 function shuffle(items) {
@@ -119,66 +119,72 @@ function shuffle(items) {
 
 function toast(message) {
   const element = $('#toast');
-  if (!element) return;
   element.textContent = message;
   element.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => element.classList.remove('show'), 1900);
+  toastTimer = setTimeout(() => element.classList.remove('show'), 1800);
 }
 
 function updateStats() {
   const total = questions.length;
   const knownCount = questions.filter(question => isKnown(question.id)).length;
   const percentage = total ? Math.round((knownCount / total) * 100) : 0;
-  const variantQuestions = currentVariantQuestions();
-  const variantKnown = variantQuestions.filter(question => isKnown(question.id)).length;
+  const selected = currentVariantQuestions();
+  const variantKnown = selected.filter(question => isKnown(question.id)).length;
 
   $('#stat-known').textContent = String(knownCount);
   $('#stat-total').textContent = String(total);
   $('#stat-percent').textContent = percentage + '%';
   $('#progress-fill').style.width = percentage + '%';
 
-  const summary = $('#variant-summary');
-  if (summary && currentVariant()) {
-    summary.textContent = variantQuestions.length + ' карточек · ' + variantKnown + ' из ' + variantQuestions.length + ' выучено';
-  }
-  const deckTotal = $('#deck-total');
-  if (deckTotal) deckTotal.textContent = String(variantQuestions.length);
+  $('#variant-summary').textContent = activeVariant === 'all'
+    ? selected.length + ' карточек · ' + variantKnown + ' выучено'
+    : selected.length + ' карточек · ' + variantKnown + ' из ' + selected.length + ' выучено';
 }
 
 function renderVariantPicker() {
   const container = $('#variant-picker');
   container.replaceChildren();
 
-  variants.forEach(variant => {
-    const variantQuestions = questions.filter(question => question.variantId === variant.id);
-    const knownCount = variantQuestions.filter(question => isKnown(question.id)).length;
+  const options = [
+    ...variants.map(variant => ({
+      id: variant.id,
+      label: 'Вариант ' + variant.id,
+      count: questions.filter(question => question.variantId === variant.id).length
+    })),
+    { id: 'all', label: 'Все варианты вместе', count: questions.length }
+  ];
+
+  options.forEach(option => {
+    const optionQuestions = option.id === 'all'
+      ? questions
+      : questions.filter(question => question.variantId === option.id);
+    const knownCount = optionQuestions.filter(question => isKnown(question.id)).length;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'variant-option' + (variant.id === activeVariant ? ' active' : '');
-    button.dataset.variant = String(variant.id);
-    button.setAttribute('aria-pressed', String(variant.id === activeVariant));
+    button.className = 'variant-option' + (option.id === activeVariant ? ' active' : '');
+    button.dataset.variant = String(option.id);
+    button.setAttribute('aria-pressed', String(option.id === activeVariant));
 
     const title = document.createElement('strong');
-    title.textContent = 'Вариант ' + variant.id;
+    title.textContent = option.label;
     const count = document.createElement('span');
-    count.textContent = knownCount + ' / ' + variantQuestions.length;
+    count.textContent = knownCount + ' / ' + option.count;
     button.append(title, count);
-    button.addEventListener('click', () => selectVariant(variant.id));
+    button.addEventListener('click', () => selectVariant(option.id));
     container.append(button);
   });
-
   updateStats();
 }
 
 function selectVariant(variantId) {
-  if (!variants.some(variant => variant.id === variantId)) return;
-  activeVariant = variantId;
+  if (variantId !== 'all' && !variants.some(variant => variant.id === Number(variantId))) return;
+  activeVariant = variantId === 'all' ? 'all' : Number(variantId);
   deck = shuffle(currentVariantQuestions());
   deckPosition = 0;
   trainerQueue = shuffle(currentVariantQuestions());
   trainerPosition = 0;
-  libraryLimit = 30;
+  libraryLimit = activeVariant === 'all' ? 120 : 30;
   renderVariantPicker();
   renderCard();
   renderTrainer();
@@ -193,25 +199,26 @@ function buildDeck() {
 }
 
 function currentCard() {
-  return deck[deckPosition] || currentVariantQuestions()[0];
+  return deck[deckPosition];
 }
 
 function renderCard() {
   const question = currentCard();
   if (!question) return;
 
-  $('#deck-category').textContent = 'ВАРИАНТ ' + activeVariant;
+  $('#deck-category').textContent = variantLabel();
   $('#card-number').textContent = String(deckPosition + 1).padStart(2, '0');
   $('#deck-total').textContent = String(deck.length);
   $('#card-question').textContent = question.question;
   $('#answer-text').textContent = question.answer;
   $('#card-answer').hidden = true;
-  $('#card-label').textContent = 'ВОПРОС ' + question.number;
+  $('#card-label').textContent = questionLabel(question);
   $('#flip-btn').textContent = 'Показать ответ';
   $('#bookmark-symbol').textContent = isFavorite(question.id) ? '★' : '☆';
   $('#bookmark-label').textContent = isFavorite(question.id) ? 'В избранном' : 'В избранное';
   $('#prev-btn').disabled = deck.length < 2 || deckPosition === 0;
   $('#next-btn').disabled = deck.length < 2 || deckPosition === deck.length - 1;
+  $('#flashcard').setAttribute('aria-label', question.question + '. Нажми, чтобы открыть ответ.');
 }
 
 function flipCard() {
@@ -222,8 +229,7 @@ function flipCard() {
     $('#flip-btn').textContent = 'Скрыть ответ';
   } else {
     answer.hidden = true;
-    const question = currentCard();
-    $('#card-label').textContent = question ? 'ВОПРОС ' + question.number : 'ВОПРОС';
+    $('#card-label').textContent = questionLabel(currentCard());
     $('#flip-btn').textContent = 'Показать ответ';
   }
 }
@@ -242,7 +248,7 @@ function rateCard(markKnown) {
   if (markKnown) {
     state.known = unique([...state.known, question.id]);
     state.review = state.review.filter(id => id !== question.id);
-    toast('Отмечено');
+    toast('Отмечено как выученное');
   } else {
     state.known = state.known.filter(id => id !== question.id);
     state.review = unique([...state.review, question.id]);
@@ -252,13 +258,8 @@ function rateCard(markKnown) {
   saveState();
   renderVariantPicker();
   renderLibrary();
-
-  if (deckPosition < deck.length - 1) {
-    moveCard(1);
-  } else {
-    renderCard();
-    toast('Вариант пройден');
-  }
+  if (deckPosition < deck.length - 1) moveCard(1);
+  else toast('Колода пройдена');
 }
 
 function toggleFavorite(id) {
@@ -290,7 +291,7 @@ function renderTrainer() {
   if (!question) return;
 
   $('#trainer-index').textContent = (trainerPosition + 1) + ' / ' + trainerQueue.length;
-  $('#trainer-category').textContent = 'ВАРИАНТ ' + activeVariant;
+  $('#trainer-category').textContent = questionLabel(question);
   $('#trainer-question').textContent = question.question;
   $('#my-answer').value = '';
   $('#trainer-answer-text').textContent = question.answer;
@@ -304,7 +305,7 @@ function advanceTrainer() {
     renderTrainer();
     return;
   }
-  toast('Все вопросы варианта пройдены');
+  toast('Все вопросы выбранной колоды пройдены');
   buildTrainer();
 }
 
@@ -329,7 +330,6 @@ function gradeTrainer(wasKnown) {
 function filteredQuestions() {
   const search = $('#search-input').value.trim().toLocaleLowerCase('ru');
   const status = $('#status-filter').value;
-
   return currentVariantQuestions().filter(question => {
     const searchable = (question.question + ' ' + question.answer).toLocaleLowerCase('ru');
     if (search && !searchable.includes(search)) return false;
@@ -343,7 +343,6 @@ function filteredQuestions() {
 
 function renderLibrary() {
   if (!questions.length) return;
-
   const filtered = filteredQuestions();
   const shown = filtered.slice(0, libraryLimit);
   const list = $('#question-list');
@@ -358,7 +357,9 @@ function renderLibrary() {
     const summary = document.createElement('summary');
     const number = document.createElement('span');
     number.className = 'item-dot';
-    number.textContent = String(question.number).padStart(2, '0');
+    number.textContent = activeVariant === 'all'
+      ? question.variantId + '.' + question.number
+      : String(question.number);
 
     const title = document.createElement('div');
     title.className = 'item-question';
@@ -372,7 +373,6 @@ function renderLibrary() {
       statusTag.textContent = isKnown(question.id) ? 'ЗНАЮ' : 'ПОВТОРИТЬ';
       meta.append(statusTag);
     }
-
     const summaryText = document.createElement('div');
     summaryText.append(title, meta);
     summary.append(number, summaryText);
@@ -425,7 +425,8 @@ function renderLibrary() {
     list.append(details);
   });
 
-  $('#library-count').textContent = filtered.length + ' вопросов';
+  const total = activeVariant === 'all' ? questions.length : currentVariantQuestions().length;
+  $('#library-count').textContent = filtered.length + ' из ' + total + ' вопросов';
   $('#load-more').hidden = shown.length >= filtered.length;
   $('#load-more').textContent = 'Показать ещё (' + Math.min(30, filtered.length - shown.length) + ')';
   $('#toggle-all-answers').textContent = showAllAnswers ? 'Скрыть ответы' : 'Показать все ответы';
@@ -436,7 +437,6 @@ function setView(view) {
   $$('.view').forEach(section => section.classList.toggle('active', section.id === 'view-' + view));
   if (view === 'trainer') renderTrainer();
   if (view === 'library') renderLibrary();
-  $('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function wireEvents() {
@@ -458,7 +458,7 @@ function wireEvents() {
 
   $('#shuffle-btn').addEventListener('click', () => {
     buildDeck();
-    toast('Карточки перемешаны');
+    toast('Колода перемешана');
   });
   $('#prev-btn').addEventListener('click', () => moveCard(-1));
   $('#next-btn').addEventListener('click', () => moveCard(1));
@@ -479,11 +479,11 @@ function wireEvents() {
   $('#trainer-skip').addEventListener('click', advanceTrainer);
 
   $('#search-input').addEventListener('input', () => {
-    libraryLimit = 30;
+    libraryLimit = activeVariant === 'all' ? 120 : 30;
     renderLibrary();
   });
   $('#status-filter').addEventListener('change', () => {
-    libraryLimit = 30;
+    libraryLimit = activeVariant === 'all' ? 120 : 30;
     renderLibrary();
   });
   $('#load-more').addEventListener('click', () => {
@@ -534,7 +534,7 @@ async function init() {
     variants = payload.variants || [];
     questions = variants.flatMap(variant =>
       variant.questions.map(([question, answer], index) => {
-        // В первом исходном списке номер 22 пропущен. Сохраняем исходную нумерацию и не добавляем карточку.
+        // Первый вариант не содержит исходного вопроса № 22.
         const sourceNumber = variant.id === 1 && index >= 21 ? index + 2 : index + 1;
         return {
           id: 'v' + variant.id + '-q' + String(sourceNumber).padStart(2, '0'),
@@ -546,12 +546,16 @@ async function init() {
       })
     );
 
-    if (variants.length !== 4 || variants.some(variant => variant.questions.length < 1)) {
-      throw new Error('Не удалось загрузить четыре варианта вопросов.');
+    const expectedCounts = [29, 30, 30, 30];
+    if (variants.length !== 4 || variants.some((variant, index) => variant.questions.length !== expectedCounts[index]) || questions.length !== 119) {
+      throw new Error('Ожидалось 119 исходных вопросов: 29 + 30 + 30 + 30.');
     }
 
-    if (!variants.some(variant => variant.id === state.activeVariant)) activeVariant = 1;
-    else activeVariant = state.activeVariant;
+    if (state.activeVariant !== 'all' && !variants.some(variant => variant.id === state.activeVariant)) {
+      activeVariant = 1;
+    } else {
+      activeVariant = state.activeVariant;
+    }
 
     deck = shuffle(currentVariantQuestions());
     trainerQueue = shuffle(currentVariantQuestions());
@@ -563,10 +567,9 @@ async function init() {
     wireEvents();
   } catch (error) {
     console.error(error);
-    $('#card-question').textContent = 'Не удалось загрузить вопросы. Обнови страницу; прогресс не сброшен.';
+    $('#card-question').textContent = 'Не удалось загрузить вопросы. Обнови страницу.';
     $('#trainer-question').textContent = 'Набор вопросов не загрузился.';
     $('#question-list').textContent = 'Не удалось загрузить вопросы. Проверь подключение и обнови страницу.';
-    $('#deck-category').textContent = 'ОШИБКА ЗАГРУЗКИ';
   }
 }
 
