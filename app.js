@@ -1,7 +1,8 @@
 'use strict';
 
-const DATA_URL = 'data/variants.json?v=20261117-1';
+const DATA_URL = 'data/variants.json?v=20261117-2';
 const STORAGE_KEY = 'history-lab-colloquium-v1';
+const THEME_KEY = 'history-lab-theme-v1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -48,6 +49,39 @@ function saveState() {
   updateStats();
 }
 
+function applyTheme(theme) {
+  const selected = theme === 'dark' ? 'dark' : 'light';
+  document.body.dataset.theme = selected;
+  const button = $('#theme-toggle');
+  if (button) {
+    button.textContent = selected === 'dark' ? '☀' : '☾';
+    button.setAttribute('aria-label', selected === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему');
+    button.setAttribute('title', selected === 'dark' ? 'Светлая тема' : 'Тёмная тема');
+  }
+  const meta = $('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', selected === 'dark' ? '#171e24' : '#f4f6f4');
+}
+
+function initTheme() {
+  let preferred = 'light';
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark' || saved === 'light') preferred = saved;
+  } catch (error) {
+    console.warn('Настройка темы недоступна:', error);
+  }
+  applyTheme(preferred);
+  $('#theme-toggle').addEventListener('click', () => {
+    const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch (error) {
+      console.warn('Не удалось сохранить тему:', error);
+    }
+  });
+}
+
 function unique(items) {
   return [...new Set(items)];
 }
@@ -74,36 +108,42 @@ function currentVariantQuestions() {
     .sort((a, b) => a.number - b.number);
 }
 
+function shuffle(items) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
+  }
+  return result;
+}
+
 function toast(message) {
   const element = $('#toast');
   if (!element) return;
   element.textContent = message;
   element.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => element.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => element.classList.remove('show'), 1900);
 }
 
 function updateStats() {
   const total = questions.length;
   const knownCount = questions.filter(question => isKnown(question.id)).length;
-  const reviewCount = questions.filter(question => !isKnown(question.id) || needsReview(question.id)).length;
   const percentage = total ? Math.round((knownCount / total) * 100) : 0;
   const variantQuestions = currentVariantQuestions();
   const variantKnown = variantQuestions.filter(question => isKnown(question.id)).length;
 
-  $('#stat-total').textContent = total;
-  $('#hero-total').textContent = total;
-  $('#stat-known').textContent = knownCount;
-  $('#stat-review').textContent = reviewCount;
+  $('#stat-known').textContent = String(knownCount);
+  $('#stat-total').textContent = String(total);
   $('#stat-percent').textContent = percentage + '%';
   $('#progress-fill').style.width = percentage + '%';
 
   const summary = $('#variant-summary');
   if (summary && currentVariant()) {
-    summary.textContent = currentVariant().title + ': ' + variantKnown + ' из 30 отмечено «Знаю»';
+    summary.textContent = variantQuestions.length + ' карточек · ' + variantKnown + ' из ' + variantQuestions.length + ' выучено';
   }
   const deckTotal = $('#deck-total');
-  if (deckTotal) deckTotal.textContent = String(variantQuestions.length || 30);
+  if (deckTotal) deckTotal.textContent = String(variantQuestions.length);
 }
 
 function renderVariantPicker() {
@@ -122,25 +162,21 @@ function renderVariantPicker() {
     const title = document.createElement('strong');
     title.textContent = 'Вариант ' + variant.id;
     const count = document.createElement('span');
-    count.textContent = knownCount + '/30 выучено';
+    count.textContent = knownCount + ' / ' + variantQuestions.length;
     button.append(title, count);
     button.addEventListener('click', () => selectVariant(variant.id));
     container.append(button);
   });
 
-  const note = $('#variant-note');
-  const selected = currentVariant();
-  note.textContent = selected ? (selected.note || selected.source || '') : '';
-  note.hidden = !note.textContent;
   updateStats();
 }
 
 function selectVariant(variantId) {
   if (!variants.some(variant => variant.id === variantId)) return;
   activeVariant = variantId;
-  deck = currentVariantQuestions();
+  deck = shuffle(currentVariantQuestions());
   deckPosition = 0;
-  trainerQueue = currentVariantQuestions();
+  trainerQueue = shuffle(currentVariantQuestions());
   trainerPosition = 0;
   libraryLimit = 30;
   renderVariantPicker();
@@ -150,20 +186,10 @@ function selectVariant(variantId) {
   saveState();
 }
 
-function buildDeck(shuffleDeck = false) {
-  const ordered = currentVariantQuestions();
-  deck = shuffleDeck ? shuffle(ordered) : ordered;
+function buildDeck() {
+  deck = shuffle(currentVariantQuestions());
   deckPosition = 0;
   renderCard();
-}
-
-function shuffle(items) {
-  const result = [...items];
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
-  }
-  return result;
 }
 
 function currentCard() {
@@ -180,40 +206,25 @@ function renderCard() {
   $('#card-question').textContent = question.question;
   $('#answer-text').textContent = question.answer;
   $('#card-answer').hidden = true;
-  $('#card-label').textContent = 'ВОПРОС ' + String(question.number).padStart(2, '0');
-  $('#card-hint').textContent = isKnown(question.id)
-    ? 'Уже отмечено как выученное — проверь себя ещё раз'
-    : needsReview(question.id)
-      ? 'Эту карточку стоит повторить'
-      : 'Попробуй ответить, не подглядывая';
-
-  $('#flip-btn').innerHTML = 'Показать ответ <span aria-hidden="true">↘</span>';
-  $('#reveal-btn').innerHTML = 'Открыть ответ <span>↓</span>';
+  $('#card-label').textContent = 'ВОПРОС ' + question.number;
+  $('#flip-btn').textContent = 'Показать ответ';
   $('#bookmark-symbol').textContent = isFavorite(question.id) ? '★' : '☆';
-  $('#bookmark-label').textContent = isFavorite(question.id) ? 'убрать из избранного' : 'сохранить карточку';
+  $('#bookmark-label').textContent = isFavorite(question.id) ? 'В избранном' : 'В избранное';
   $('#prev-btn').disabled = deck.length < 2 || deckPosition === 0;
   $('#next-btn').disabled = deck.length < 2 || deckPosition === deck.length - 1;
-  $('#card-position-label').textContent = deckPosition + 1 === deck.length
-    ? 'Последняя карточка варианта'
-    : 'Карточка ' + (deckPosition + 1) + ' из ' + deck.length;
 }
 
 function flipCard() {
   const answer = $('#card-answer');
-  const question = currentCard();
-  if (!question) return;
-
   if (answer.hidden) {
     answer.hidden = false;
-    $('#card-label').textContent = 'ВОПРОС ' + String(question.number).padStart(2, '0') + ' · ОТВЕТ';
-    $('#card-hint').textContent = 'Оцени честно: вспомнил до открытия?';
+    $('#card-label').textContent = 'ОТВЕТ';
     $('#flip-btn').textContent = 'Скрыть ответ';
-    $('#reveal-btn').innerHTML = 'Скрыть ответ <span>↑</span>';
   } else {
     answer.hidden = true;
-    $('#card-label').textContent = 'ВОПРОС ' + String(question.number).padStart(2, '0');
-    $('#flip-btn').innerHTML = 'Показать ответ <span aria-hidden="true">↘</span>';
-    $('#reveal-btn').innerHTML = 'Открыть ответ <span>↓</span>';
+    const question = currentCard();
+    $('#card-label').textContent = question ? 'ВОПРОС ' + question.number : 'ВОПРОС';
+    $('#flip-btn').textContent = 'Показать ответ';
   }
 }
 
@@ -231,19 +242,23 @@ function rateCard(markKnown) {
   if (markKnown) {
     state.known = unique([...state.known, question.id]);
     state.review = state.review.filter(id => id !== question.id);
-    toast('Отмечено: знаешь уверенно ✓');
+    toast('Отмечено');
   } else {
     state.known = state.known.filter(id => id !== question.id);
     state.review = unique([...state.review, question.id]);
-    toast('Карточка добавлена в повторение ↻');
+    toast('Добавлено на повторение');
   }
 
   saveState();
   renderVariantPicker();
-  renderCard();
   renderLibrary();
-  if (deckPosition < deck.length - 1) moveCard(1);
-  else toast('Вариант ' + activeVariant + ' пройден. Можно начать заново или выбрать другой.');
+
+  if (deckPosition < deck.length - 1) {
+    moveCard(1);
+  } else {
+    renderCard();
+    toast('Вариант пройден');
+  }
 }
 
 function toggleFavorite(id) {
@@ -252,7 +267,7 @@ function toggleFavorite(id) {
     toast('Убрано из избранного');
   } else {
     state.favorites = unique([...state.favorites, id]);
-    toast('Сохранено в избранное ☆');
+    toast('Добавлено в избранное');
   }
   saveState();
   renderVariantPicker();
@@ -261,7 +276,7 @@ function toggleFavorite(id) {
 }
 
 function buildTrainer() {
-  trainerQueue = currentVariantQuestions();
+  trainerQueue = shuffle(currentVariantQuestions());
   trainerPosition = 0;
   renderTrainer();
 }
@@ -274,17 +289,13 @@ function renderTrainer() {
   const question = trainerCurrent();
   if (!question) return;
 
-  $('#trainer-index').textContent = 'ВОПРОС ' + question.number + ' / 30';
+  $('#trainer-index').textContent = (trainerPosition + 1) + ' / ' + trainerQueue.length;
   $('#trainer-category').textContent = 'ВАРИАНТ ' + activeVariant;
   $('#trainer-question').textContent = question.question;
   $('#my-answer').value = '';
   $('#trainer-answer-text').textContent = question.answer;
   $('#trainer-answer').hidden = true;
   $('#trainer-reveal').disabled = false;
-  $('#trainer-reveal').textContent = 'Сверить с ответом';
-  $('#trainer-no').disabled = false;
-  $('#trainer-yes').disabled = false;
-  $('#trainer-skip').disabled = false;
 }
 
 function advanceTrainer() {
@@ -293,9 +304,8 @@ function advanceTrainer() {
     renderTrainer();
     return;
   }
-  toast('Вариант ' + activeVariant + ': все 30 вопросов пройдены');
-  trainerPosition = 0;
-  renderTrainer();
+  toast('Все вопросы варианта пройдены');
+  buildTrainer();
 }
 
 function gradeTrainer(wasKnown) {
@@ -305,11 +315,9 @@ function gradeTrainer(wasKnown) {
   if (wasKnown) {
     state.known = unique([...state.known, question.id]);
     state.review = state.review.filter(id => id !== question.id);
-    toast('Отлично. Ответ воспроизведён ✓');
   } else {
     state.known = state.known.filter(id => id !== question.id);
     state.review = unique([...state.review, question.id]);
-    toast('Оставили в списке повторения ↻');
   }
 
   saveState();
@@ -348,22 +356,16 @@ function renderLibrary() {
       (needsReview(question.id) ? ' status-review' : '');
 
     const summary = document.createElement('summary');
-    const dot = document.createElement('span');
-    dot.className = 'item-dot';
-    dot.textContent = isKnown(question.id) ? '✓' : needsReview(question.id) ? '↻' : String(question.number).padStart(2, '0');
+    const number = document.createElement('span');
+    number.className = 'item-dot';
+    number.textContent = String(question.number).padStart(2, '0');
 
-    const content = document.createElement('div');
     const title = document.createElement('div');
     title.className = 'item-question';
     title.textContent = question.question;
 
     const meta = document.createElement('div');
     meta.className = 'item-meta';
-    const label = document.createElement('span');
-    label.className = 'item-category';
-    label.textContent = 'Вариант ' + activeVariant + ' · вопрос ' + question.number;
-    meta.append(label);
-
     if (isKnown(question.id) || needsReview(question.id)) {
       const statusTag = document.createElement('span');
       statusTag.className = 'status-tag';
@@ -371,8 +373,9 @@ function renderLibrary() {
       meta.append(statusTag);
     }
 
-    content.append(title, meta);
-    summary.append(dot, content);
+    const summaryText = document.createElement('div');
+    summaryText.append(title, meta);
+    summary.append(number, summaryText);
 
     const answer = document.createElement('div');
     answer.className = 'item-answer';
@@ -404,7 +407,7 @@ function renderLibrary() {
     const favoriteButton = document.createElement('button');
     favoriteButton.type = 'button';
     favoriteButton.className = 'mini-action';
-    favoriteButton.textContent = isFavorite(question.id) ? '★ В избранном' : '☆ В избранное';
+    favoriteButton.textContent = isFavorite(question.id) ? '★ Избранное' : '☆ В избранное';
     favoriteButton.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
@@ -415,16 +418,14 @@ function renderLibrary() {
     answer.append(answerText, actions);
     if (!showAllAnswers) answer.hidden = true;
     details.append(summary, answer);
-
     if (showAllAnswers) details.open = true;
     details.addEventListener('toggle', () => {
       if (!showAllAnswers) answer.hidden = !details.open;
     });
-
     list.append(details);
   });
 
-  $('#library-count').textContent = filtered.length + ' из 30 вопросов';
+  $('#library-count').textContent = filtered.length + ' вопросов';
   $('#load-more').hidden = shown.length >= filtered.length;
   $('#load-more').textContent = 'Показать ещё (' + Math.min(30, filtered.length - shown.length) + ')';
   $('#toggle-all-answers').textContent = showAllAnswers ? 'Скрыть ответы' : 'Показать все ответы';
@@ -435,13 +436,11 @@ function setView(view) {
   $$('.view').forEach(section => section.classList.toggle('active', section.id === 'view-' + view));
   if (view === 'trainer') renderTrainer();
   if (view === 'library') renderLibrary();
-  const tabsTop = $('.tabs').getBoundingClientRect().top + window.scrollY - 10;
-  window.scrollTo({ top: tabsTop, behavior: 'smooth' });
+  $('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function wireEvents() {
   $$('.tab').forEach(tab => tab.addEventListener('click', () => setView(tab.dataset.view)));
-  $$('[data-go]').forEach(button => button.addEventListener('click', () => setView(button.dataset.go)));
 
   const flashcard = $('#flashcard');
   flashcard.addEventListener('click', event => {
@@ -458,17 +457,12 @@ function wireEvents() {
   });
 
   $('#shuffle-btn').addEventListener('click', () => {
-    buildDeck(true);
-    toast('Вариант ' + activeVariant + ' перемешан');
-  });
-  $('#ordered-btn').addEventListener('click', () => {
-    buildDeck(false);
-    toast('Вопросы снова идут по порядку');
+    buildDeck();
+    toast('Карточки перемешаны');
   });
   $('#prev-btn').addEventListener('click', () => moveCard(-1));
   $('#next-btn').addEventListener('click', () => moveCard(1));
   $('#flip-btn').addEventListener('click', flipCard);
-  $('#reveal-btn').addEventListener('click', flipCard);
   $('#again-btn').addEventListener('click', () => rateCard(false));
   $('#known-btn').addEventListener('click', () => rateCard(true));
   $('#bookmark-btn').addEventListener('click', () => {
@@ -501,21 +495,11 @@ function wireEvents() {
     renderLibrary();
   });
 
-  $$('[data-task]').forEach(checkbox => {
-    checkbox.checked = Boolean(state.tasks[checkbox.dataset.task]);
-    checkbox.addEventListener('change', () => {
-      state.tasks[checkbox.dataset.task] = checkbox.checked;
-      saveState();
-    });
-  });
-
   $('#reset-progress').addEventListener('click', () => {
-    if (!confirm('Сбросить отметки «Знаю», повторение, избранное и галочки плана на этом устройстве?')) return;
+    if (!confirm('Сбросить прогресс по всем четырём вариантам и избранное?')) return;
     state.known = [];
     state.review = [];
     state.favorites = [];
-    state.tasks = {};
-    $$('[data-task]').forEach(checkbox => { checkbox.checked = false; });
     saveState();
     renderVariantPicker();
     renderCard();
@@ -541,44 +525,47 @@ function wireEvents() {
 }
 
 async function init() {
+  initTheme();
   try {
     const response = await fetch(DATA_URL, { cache: 'no-store' });
-    if (!response.ok) throw new Error('Не удалось загрузить ' + DATA_URL + ': ' + response.status);
+    if (!response.ok) throw new Error('Не удалось загрузить вопросы: ' + response.status);
 
     const payload = await response.json();
     variants = payload.variants || [];
     questions = variants.flatMap(variant =>
-      variant.questions.map(([question, answer], index) => ({
-        id: 'v' + variant.id + '-q' + String(index + 1).padStart(2, '0'),
-        variantId: variant.id,
-        number: index + 1,
-        question,
-        answer
-      }))
+      variant.questions.map(([question, answer], index) => {
+        // В первом исходном списке номер 22 пропущен. Сохраняем исходную нумерацию и не добавляем карточку.
+        const sourceNumber = variant.id === 1 && index >= 21 ? index + 2 : index + 1;
+        return {
+          id: 'v' + variant.id + '-q' + String(sourceNumber).padStart(2, '0'),
+          variantId: variant.id,
+          number: sourceNumber,
+          question,
+          answer
+        };
+      })
     );
 
-    if (variants.length !== 4 || variants.some(variant => variant.questions.length !== 30) || questions.length !== 120) {
-      throw new Error('Набор должен содержать ровно 4 варианта по 30 вопросов.');
+    if (variants.length !== 4 || variants.some(variant => variant.questions.length < 1)) {
+      throw new Error('Не удалось загрузить четыре варианта вопросов.');
     }
 
     if (!variants.some(variant => variant.id === state.activeVariant)) activeVariant = 1;
     else activeVariant = state.activeVariant;
 
-    deck = currentVariantQuestions();
-    trainerQueue = currentVariantQuestions();
+    deck = shuffle(currentVariantQuestions());
+    trainerQueue = shuffle(currentVariantQuestions());
     renderVariantPicker();
-    buildDeck(false);
-    buildTrainer();
+    renderCard();
+    renderTrainer();
     updateStats();
     renderLibrary();
     wireEvents();
   } catch (error) {
     console.error(error);
-    $('#card-question').textContent = 'Не удалось загрузить вопросы. Обнови страницу; локальный прогресс не сброшен.';
+    $('#card-question').textContent = 'Не удалось загрузить вопросы. Обнови страницу; прогресс не сброшен.';
     $('#trainer-question').textContent = 'Набор вопросов не загрузился.';
     $('#question-list').textContent = 'Не удалось загрузить вопросы. Проверь подключение и обнови страницу.';
-    $('#stat-total').textContent = '—';
-    $('#stat-review').textContent = '—';
     $('#deck-category').textContent = 'ОШИБКА ЗАГРУЗКИ';
   }
 }
