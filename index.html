@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f3f5f2">
   <meta name="description" content="Четыре варианта теста по истории России. 119 исходных вопросов и кратких ответов.">
   <title>History Lab — карточки по истории России</title>
-  <link rel="stylesheet" href="styles.css?v=20261117-modes">
-  <script src="app.js?v=20261117-modes" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261117-probability">
+  <script src="app.js?v=20261117-probability" defer></script>
 </head>
 <body data-theme="light">
   <div class="app-shell">
@@ -36,7 +36,7 @@
 
       <section class="overall-progress" aria-label="Общий прогресс">
         <div class="progress-copy">
-          <span>Выучено <strong id="stat-known">0</strong> из <strong id="stat-total">119</strong></span>
+          <span>Прорешано <strong id="stat-attempted">0</strong> из <strong id="stat-total">119</strong> · выучено <strong id="stat-known">0</strong></span>
           <strong id="stat-percent">0%</strong>
         </div>
         <div class="progress-track"><span id="progress-fill"></span></div>
@@ -46,9 +46,11 @@
         <button class="tab active" data-view="cards">Карточки</button>
         <button class="tab" data-view="trainer">Самопроверка</button>
         <button class="tab" data-view="library">Все вопросы</button>
+        <button class="tab" data-view="probability">Вероятность</button>
       </nav>
 
       <section class="view active" id="view-cards" aria-label="Карточки">
+        <div id="deck-session">
         <div class="deck-topline">
           <span id="deck-category">ВАРИАНТ 1</span>
           <span class="deck-count"><strong id="card-number">01</strong><span> / </span><span id="deck-total">29</span></span>
@@ -83,6 +85,24 @@
           <button class="rating rating-known" id="known-btn" type="button"><span class="rating-symbol">✓</span><strong>Знаю</strong></button>
           <button class="rating rating-bookmark" id="bookmark-btn" type="button"><span class="rating-symbol" id="bookmark-symbol">☆</span><strong id="bookmark-label">В избранное</strong></button>
         </div>
+        </div>
+
+        <section class="deck-complete" id="deck-complete" hidden aria-live="polite">
+          <div class="complete-panel">
+            <div class="eyebrow">КОЛОДА ЗАВЕРШЕНА</div>
+            <h2>Отлично, этот набор пройден.</h2>
+            <div class="complete-stats">
+              <div><strong id="complete-attempted">0 / 30</strong><span>прорешано</span></div>
+              <div><strong id="complete-known">0</strong><span>выучено</span></div>
+              <div><strong id="complete-review">0</strong><span>на повторение</span></div>
+              <div><strong id="complete-untouched">0</strong><span>без отметки</span></div>
+            </div>
+            <div class="complete-actions">
+              <button class="button button-secondary" id="restart-all" type="button">Пройти все заново</button>
+              <button class="button button-reveal" id="restart-unlearned" type="button">Только невыученные · <span id="restart-unlearned-count">0</span></button>
+            </div>
+          </div>
+        </section>
       </section>
 
       <section class="view" id="view-trainer" aria-label="Самопроверка">
@@ -123,6 +143,75 @@
         <div class="results-line"><span id="library-count">29 вопросов</span></div>
         <div class="question-list" id="question-list"></div>
         <button class="button button-secondary load-more" id="load-more" type="button">Показать ещё</button>
+      </section>
+
+      <section class="view" id="view-probability" aria-label="Вероятность оценки">
+        <div class="probability-header">
+          <div>
+            <div class="eyebrow">ПРОГНОЗ РЕЗУЛЬТАТА</div>
+            <h2>Вероятность оценки</h2>
+          </div>
+          <button class="text-button" id="probability-use-progress" type="button">Мой прогресс</button>
+        </div>
+
+        <div class="probability-model">
+          <div class="probability-model-top">
+            <label for="probability-slider">Выучено карточек</label>
+            <strong id="probability-known-value">0 / 119</strong>
+          </div>
+          <input id="probability-slider" type="range" min="0" max="119" value="0" step="1">
+          <div class="range-ends"><span>0</span><span>119</span></div>
+          <div class="probability-grid">
+            <article class="probability-grade grade-five">
+              <div><span>Оценка 5</span><strong id="prob-value-5">0%</strong></div>
+              <div class="probability-track"><span id="prob-bar-5"></span></div>
+            </article>
+            <article class="probability-grade grade-four">
+              <div><span>Оценка 4</span><strong id="prob-value-4">0%</strong></div>
+              <div class="probability-track"><span id="prob-bar-4"></span></div>
+            </article>
+            <article class="probability-grade grade-three">
+              <div><span>Оценка 3</span><strong id="prob-value-3">0%</strong></div>
+              <div class="probability-track"><span id="prob-bar-3"></span></div>
+            </article>
+            <article class="probability-grade grade-low">
+              <div><span>Ниже 3</span><strong id="prob-value-below">100%</strong></div>
+              <div class="probability-track"><span id="prob-bar-below"></span></div>
+            </article>
+          </div>
+          <p class="probability-note">Расчётная модель: один из четырёх вариантов выпадает с одинаковой вероятностью, а выученные карточки распределены по вариантам равномерно. Считаем, что выученный вопрос будет отвечен верно, а невыученный — ошибочно. Это осторожная оценка, не гарантия результата.</p>
+        </div>
+
+        <div class="probability-section">
+          <div class="probability-section-title">
+            <div><div class="eyebrow">ПО ТВОЕМУ ПРОГРЕССУ</div><h3>Прогноз по каждому варианту</h3></div>
+          </div>
+          <p class="probability-note compact">Здесь используются реальные отметки «Знаю» отдельно в каждом варианте. Для строгого прогноза все невыученные карточки считаются ошибками.</p>
+          <div class="table-scroll">
+            <table class="probability-table">
+              <thead><tr><th>Вариант</th><th>Выучено</th><th>Ошибок*</th><th>Оценка</th></tr></thead>
+              <tbody id="variant-forecast"></tbody>
+            </table>
+          </div>
+          <div class="actual-probability">
+            <span>Шанс по текущим отметкам (если любой вариант равновероятен):</span>
+            <div><strong>5:</strong> <b id="actual-value-5">0%</b> <strong>4:</strong> <b id="actual-value-4">0%</b> <strong>3:</strong> <b id="actual-value-3">0%</b> <strong>ниже 3:</strong> <b id="actual-value-below">0%</b></div>
+          </div>
+        </div>
+
+        <div class="probability-section">
+          <div class="probability-section-title">
+            <div><div class="eyebrow">ОРИЕНТИРЫ</div><h3>Шанс при разном количестве выученных карточек</h3></div>
+          </div>
+          <div class="table-scroll">
+            <table class="probability-table milestone-table">
+              <thead><tr><th>Выучено</th><th>Оценка 5</th><th>Оценка 4</th><th>Оценка 3</th><th>Ниже 3</th></tr></thead>
+              <tbody id="probability-milestones"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <p class="grading-criteria"><strong>Критерии в расчёте:</strong> 0–5 ошибок — 5; 6–10 — 4; 11–15 — 3; 16 и более — ниже 3 (границы 5 и 10 отнесены к более высокой оценке, ноль ошибок — тоже 5).</p>
       </section>
 
       <footer class="footer">
