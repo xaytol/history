@@ -52,7 +52,10 @@
         <div class="deck-topline">
           <span id="deck-category">ВАРИАНТ 1</span>
           <span class="deck-count"><strong id="card-number">01</strong><span> / </span><span id="deck-total">29</span></span>
-          <button class="text-button" id="shuffle-btn" type="button" title="Перемешать вопросы">Перемешать ↻</button>
+          <div class="deck-modes" role="group" aria-label="Порядок карточек">
+            <button class="deck-mode active" id="shuffle-btn" type="button" aria-pressed="true">Случайно</button>
+            <button class="deck-mode" id="ordered-btn" type="button" aria-pressed="false">По порядку</button>
+          </div>
         </div>
 
         <div class="flashcard" id="flashcard" role="group" tabindex="0" aria-label="Карточка вопроса. Нажми на карточку, чтобы открыть ответ." aria-keyshortcuts="Space Enter">
