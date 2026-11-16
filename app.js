@@ -9,6 +9,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let variants = [];
 let questions = [];
 let activeVariant = 1;
+let deckMode = 'shuffle';
 let deck = [];
 let deckPosition = 0;
 let trainerQueue = [];
@@ -26,10 +27,11 @@ function loadState() {
       known: Array.isArray(saved.known) ? saved.known : [],
       review: Array.isArray(saved.review) ? saved.review : [],
       favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
-      activeVariant: saved.activeVariant === 'all' ? 'all' : (Number(saved.activeVariant) || 1)
+      activeVariant: saved.activeVariant === 'all' ? 'all' : (Number(saved.activeVariant) || 1),
+      deckMode: saved.deckMode === 'ordered' ? 'ordered' : 'shuffle'
     };
   } catch {
-    return { known: [], review: [], favorites: [], activeVariant: 1 };
+    return { known: [], review: [], favorites: [], activeVariant: 1, deckMode: 'shuffle' };
   }
 }
 
@@ -39,7 +41,8 @@ function saveState() {
       known: state.known,
       review: state.review,
       favorites: state.favorites,
-      activeVariant
+      activeVariant,
+      deckMode
     }));
   } catch (error) {
     console.warn('Не удалось сохранить прогресс:', error);
@@ -180,7 +183,7 @@ function renderVariantPicker() {
 function selectVariant(variantId) {
   if (variantId !== 'all' && !variants.some(variant => variant.id === Number(variantId))) return;
   activeVariant = variantId === 'all' ? 'all' : Number(variantId);
-  deck = shuffle(currentVariantQuestions());
+  deck = makeDeck();
   deckPosition = 0;
   trainerQueue = shuffle(currentVariantQuestions());
   trainerPosition = 0;
@@ -192,8 +195,32 @@ function selectVariant(variantId) {
   saveState();
 }
 
+function makeDeck() {
+  const items = currentVariantQuestions();
+  return deckMode === 'ordered' ? items : shuffle(items);
+}
+
+function renderDeckModes() {
+  const shuffled = $('#shuffle-btn');
+  const ordered = $('#ordered-btn');
+  shuffled.classList.toggle('active', deckMode === 'shuffle');
+  ordered.classList.toggle('active', deckMode === 'ordered');
+  shuffled.setAttribute('aria-pressed', String(deckMode === 'shuffle'));
+  ordered.setAttribute('aria-pressed', String(deckMode === 'ordered'));
+}
+
+function setDeckMode(mode) {
+  if (mode !== 'shuffle' && mode !== 'ordered') return;
+  deckMode = mode;
+  deck = makeDeck();
+  deckPosition = 0;
+  renderDeckModes();
+  renderCard();
+  saveState();
+}
+
 function buildDeck() {
-  deck = shuffle(currentVariantQuestions());
+  deck = makeDeck();
   deckPosition = 0;
   renderCard();
 }
@@ -457,8 +484,12 @@ function wireEvents() {
   });
 
   $('#shuffle-btn').addEventListener('click', () => {
-    buildDeck();
-    toast('Колода перемешана');
+    setDeckMode('shuffle');
+    toast('Случайный порядок');
+  });
+  $('#ordered-btn').addEventListener('click', () => {
+    setDeckMode('ordered');
+    toast('Исходный порядок вопросов');
   });
   $('#prev-btn').addEventListener('click', () => moveCard(-1));
   $('#next-btn').addEventListener('click', () => moveCard(1));
@@ -502,6 +533,7 @@ function wireEvents() {
     state.favorites = [];
     saveState();
     renderVariantPicker();
+    renderDeckModes();
     renderCard();
     renderTrainer();
     renderLibrary();
@@ -556,8 +588,9 @@ async function init() {
     } else {
       activeVariant = state.activeVariant;
     }
+    deckMode = state.deckMode === 'ordered' ? 'ordered' : 'shuffle';
 
-    deck = shuffle(currentVariantQuestions());
+    deck = makeDeck();
     trainerQueue = shuffle(currentVariantQuestions());
     renderVariantPicker();
     renderCard();
