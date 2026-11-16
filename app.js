@@ -266,7 +266,10 @@ function renderCard() {
   $('#bookmark-label').textContent = isFavorite(question.id) ? 'В избранном' : 'В избранное';
   $('#prev-btn').disabled = deck.length < 2 || deckPosition === 0;
   $('#next-btn').disabled = deck.length === 0;
-  $('#next-btn').setAttribute('aria-label', deckPosition === deck.length - 1 ? 'Завершить колоду' : 'Следующая карточка');
+  const isLastCard = deckPosition === deck.length - 1;
+  $('#next-btn').textContent = isLastCard ? '✓' : '→';
+  $('#next-btn').setAttribute('title', isLastCard ? 'Завершить колоду' : 'Следующая карточка');
+  $('#next-btn').setAttribute('aria-label', isLastCard ? 'Завершить колоду' : 'Следующая карточка');
   $('#flashcard').setAttribute('aria-label', question.question + '. Нажми, чтобы открыть ответ.');
 }
 
@@ -307,6 +310,7 @@ function showDeckCompletion() {
   const unlearnedCount = selected.filter(question => !isKnown(question.id)).length;
   const untouchedCount = selected.filter(question => !isAttempted(question.id)).length;
 
+  $('#complete-title').textContent = (activeVariant === 'all' ? 'Все варианты' : 'Вариант ' + activeVariant) + ' пройден.';
   $('#complete-attempted').textContent = attemptedCount + ' / ' + selected.length;
   $('#complete-known').textContent = String(knownCount);
   $('#complete-review').textContent = String(reviewCount);
