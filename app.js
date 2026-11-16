@@ -172,7 +172,7 @@ function renderVariantPicker() {
     const optionQuestions = option.id === 'all'
       ? questions
       : questions.filter(question => question.variantId === option.id);
-    const attemptedCount = optionQuestions.filter(question => isAttempted(question.id)).length;
+    const knownCount = optionQuestions.filter(question => isKnown(question.id)).length;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'variant-option' + (option.id === 'all' ? ' all-option' : '') + (option.id === activeVariant ? ' active' : '');
@@ -182,7 +182,8 @@ function renderVariantPicker() {
     const title = document.createElement('strong');
     title.textContent = option.label;
     const count = document.createElement('span');
-    count.textContent = attemptedCount + ' / ' + option.count;
+    count.textContent = knownCount + ' / ' + option.count;
+    count.title = 'Правильно отмечено карточек';
     button.append(title, count);
     button.addEventListener('click', () => selectVariant(option.id));
     container.append(button);
