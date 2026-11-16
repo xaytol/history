@@ -200,9 +200,11 @@ function selectVariant(variantId) {
   libraryLimit = activeVariant === 'all' ? 120 : 30;
   renderVariantPicker();
   renderDeckModes();
+  showDeckSession();
   renderCard();
   renderTrainer();
   renderLibrary();
+  renderProbability(true);
   saveState();
 }
 
@@ -527,6 +529,126 @@ function renderLibrary() {
   $('#load-more').hidden = shown.length >= filtered.length;
   $('#load-more').textContent = 'Показать ещё (' + Math.min(30, filtered.length - shown.length) + ')';
   $('#toggle-all-answers').textContent = showAllAnswers ? 'Скрыть ответы' : 'Показать все ответы';
+}
+
+function combination(n, r) {
+  if (r < 0 || r > n) return 0;
+  const k = Math.min(r, n - r);
+  let result = 1;
+  for (let index = 1; index <= k; index += 1) {
+    result = result * (n - k + index) / index;
+  }
+  return result;
+}
+
+function gradeForErrors(errors) {
+  if (errors <= 5) return '5';
+  if (errors <= 10) return '4';
+  if (errors <= 15) return '3';
+  return 'below';
+}
+
+function probabilityForLearnedCount(learnedCount) {
+  const population = questions.length;
+  const learned = Math.max(0, Math.min(population, learnedCount));
+  const unknown = population - learned;
+  const totalByGrade = { '5': 0, '4': 0, '3': 0, below: 0 };
+  const denominatorCache = new Map();
+
+  variants.forEach(variant => {
+    const sampleSize = questions.filter(question => question.variantId === variant.id).length;
+    const denominator = denominatorCache.get(sampleSize) || combination(population, sampleSize);
+    denominatorCache.set(sampleSize, denominator);
+
+    for (let errors = 0; errors <= sampleSize; errors += 1) {
+      const ways = combination(unknown, errors) * combination(learned, sampleSize - errors);
+      if (!ways) continue;
+      totalByGrade[gradeForErrors(errors)] += (ways / denominator) / variants.length;
+    }
+  });
+
+  return totalByGrade;
+}
+
+function percentText(value) {
+  const rounded = Math.round(value * 10) / 10;
+  return (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1).replace('.', ',')) + '%';
+}
+
+function makeCell(text, tag = 'td') {
+  const cell = document.createElement(tag);
+  cell.textContent = String(text);
+  return cell;
+}
+
+function renderProbability(setSliderToProgress = false) {
+  if (!questions.length) return;
+  const slider = $('#probability-slider');
+  const currentKnown = questions.filter(question => isKnown(question.id)).length;
+  slider.max = String(questions.length);
+  if (setSliderToProgress) slider.value = String(currentKnown);
+
+  const learned = Math.max(0, Math.min(questions.length, Number(slider.value) || 0));
+  slider.value = String(learned);
+  $('#probability-known-value').textContent = learned + ' / ' + questions.length;
+
+  const distribution = probabilityForLearnedCount(learned);
+  const gradeItems = [
+    { key: '5', value: distribution['5'], valueId: 'prob-value-5', barId: 'prob-bar-5' },
+    { key: '4', value: distribution['4'], valueId: 'prob-value-4', barId: 'prob-bar-4' },
+    { key: '3', value: distribution['3'], valueId: 'prob-value-3', barId: 'prob-bar-3' },
+    { key: 'below', value: distribution.below, valueId: 'prob-value-below', barId: 'prob-bar-below' }
+  ];
+  gradeItems.forEach(item => {
+    $( '#' + item.valueId).textContent = percentText(item.value * 100);
+    $( '#' + item.barId).style.width = (item.value * 100) + '%';
+    $( '#' + item.barId).setAttribute('aria-valuenow', String(Math.round(item.value * 1000) / 10));
+  });
+
+  const actualGrades = { '5': 0, '4': 0, '3': 0, below: 0 };
+  const body = $('#variant-forecast');
+  body.replaceChildren();
+  variants.forEach(variant => {
+    const group = questions.filter(question => question.variantId === variant.id);
+    const knownCount = group.filter(question => isKnown(question.id)).length;
+    const errors = group.length - knownCount;
+    const grade = gradeForErrors(errors);
+    actualGrades[grade] += 1;
+
+    const row = document.createElement('tr');
+    row.append(
+      makeCell('Вариант ' + variant.id),
+      makeCell(knownCount + ' / ' + group.length),
+      makeCell(errors),
+      makeCell(grade === 'below' ? 'Ниже 3' : grade)
+    );
+    body.append(row);
+  });
+
+  [
+    ['5', 'actual-value-5'],
+    ['4', 'actual-value-4'],
+    ['3', 'actual-value-3'],
+    ['below', 'actual-value-below']
+  ].forEach(([grade, id]) => {
+    $('#' + id).textContent = percentText(actualGrades[grade] / variants.length * 100);
+  });
+
+  const milestoneBody = $('#probability-milestones');
+  milestoneBody.replaceChildren();
+  const milestones = [...new Set([0, 15, 30, 45, 60, 75, 85, 95, 100, 105, 110, 115, questions.length])];
+  milestones.forEach(count => {
+    const result = probabilityForLearnedCount(count);
+    const row = document.createElement('tr');
+    row.append(
+      makeCell(count),
+      makeCell(percentText(result['5'] * 100)),
+      makeCell(percentText(result['4'] * 100)),
+      makeCell(percentText(result['3'] * 100)),
+      makeCell(percentText(result.below * 100))
+    );
+    milestoneBody.append(row);
+  });
 }
 
 function setView(view) {
