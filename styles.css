@@ -287,7 +287,7 @@ main { padding: 28px 0 0; }
 
 .deck-topline {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 12px;
   width: min(100%, 840px);
