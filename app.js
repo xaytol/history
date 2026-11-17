@@ -546,7 +546,29 @@ function renderLibrary() {
       toggleFavorite(question.id);
     });
 
-    actions.append(knownButton, favoriteButton);
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'mini-action';
+    editButton.textContent = 'Изменить вопрос / ответ';
+    editButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const nextQuestion = window.prompt('Изменить формулировку вопроса:', question.question);
+      if (nextQuestion === null) return;
+      const nextAnswer = window.prompt('Изменить ответ:', question.answer);
+      if (nextAnswer === null) return;
+      question.question = nextQuestion.trim() || question.question;
+      question.answer = nextAnswer.trim() || question.answer;
+      state.edits[question.id] = { question: question.question, answer: question.answer };
+      saveState();
+      renderLibrary();
+      renderCard();
+      renderTrainer();
+      renderProbability(false);
+      toast('Изменения сохранены на этом устройстве');
+    });
+
+    actions.append(knownButton, favoriteButton, editButton);
     answer.append(answerText, actions);
     if (!showAllAnswers) answer.hidden = true;
     details.append(summary, answer);
@@ -709,6 +731,7 @@ function wireEvents() {
     }
   });
 
+  $('#random-test-btn').addEventListener('click', startRandomTest);
   $('#shuffle-btn').addEventListener('click', () => {
     setDeckMode('shuffle');
     toast('Случайный порядок');
@@ -758,7 +781,7 @@ function wireEvents() {
   });
 
   $('#reset-progress').addEventListener('click', () => {
-    if (!confirm('Сбросить прогресс по всем четырём вариантам и избранное?')) return;
+    if (!confirm('Сбросить только прогресс и избранное? Твои локальные изменения вопросов и ответов сохранятся.')) return;
     state.known = [];
     state.review = [];
     state.attempted = [];
@@ -771,7 +794,37 @@ function wireEvents() {
     renderLibrary();
     renderProbability(true);
     showDeckSession();
-    toast('Прогресс сброшен');
+    toast('Прогресс сброшен, изменения сохранены');
+  });
+
+  $('#reset-everything').addEventListener('click', () => {
+    if (!confirm('Полностью очистить данные на этом устройстве? Будут удалены прогресс, избранное и все локальные изменения вопросов и ответов.')) return;
+    state.known = [];
+    state.review = [];
+    state.attempted = [];
+    state.favorites = [];
+    state.edits = {};
+    try { localStorage.removeItem(STORAGE_KEY); } catch (error) { console.warn(error); }
+    questions.forEach(question => {
+      const original = variants.find(variant => variant.id === question.variantId).questions[question.number - 1];
+      if (original) { question.question = original[0]; question.answer = original[1]; }
+    });
+    randomTest = false;
+    activeVariant = 1;
+    state.activeVariant = 1;
+    deck = makeDeck();
+    trainerQueue = makeDeck();
+    deckPosition = 0;
+    trainerPosition = 0;
+    saveState();
+    renderVariantPicker();
+    renderDeckModes();
+    renderCard();
+    renderTrainer();
+    renderLibrary();
+    renderProbability(true);
+    showDeckSession();
+    toast('Все локальные данные очищены');
   });
 
   document.addEventListener('keydown', event => {
