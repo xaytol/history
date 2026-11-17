@@ -12,6 +12,7 @@ let activeVariant = 1;
 let deckMode = 'shuffle';
 let deck = [];
 let deckPosition = 0;
+let randomTest = false;
 let trainerQueue = [];
 let trainerPosition = 0;
 let showAllAnswers = false;
@@ -31,10 +32,11 @@ function loadState() {
       attempted: Array.isArray(saved.attempted) ? saved.attempted : unique([...known, ...review]),
       favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
       activeVariant: saved.activeVariant === 'all' ? 'all' : (Number(saved.activeVariant) || 1),
-      deckMode: saved.deckMode === 'ordered' ? 'ordered' : 'shuffle'
+      deckMode: saved.deckMode === 'ordered' ? 'ordered' : 'shuffle',
+      edits: saved.edits && typeof saved.edits === 'object' ? saved.edits : {}
     };
   } catch {
-    return { known: [], review: [], attempted: [], favorites: [], activeVariant: 1, deckMode: 'shuffle' };
+    return { known: [], review: [], attempted: [], favorites: [], activeVariant: 1, deckMode: 'shuffle', edits: {} };
   }
 }
 
@@ -46,7 +48,8 @@ function saveState() {
       favorites: state.favorites,
       attempted: state.attempted,
       activeVariant,
-      deckMode
+      deckMode,
+      edits: state.edits
     }));
   } catch (error) {
     console.warn('Не удалось сохранить прогресс:', error);
@@ -112,7 +115,18 @@ function currentVariantQuestions() {
 }
 
 function variantLabel() {
+  if (randomTest) return 'СЛУЧАЙНЫЙ ТЕСТ';
   return activeVariant === 'all' ? 'ВСЕ ВАРИАНТЫ' : 'ВАРИАНТ ' + activeVariant;
+}
+
+function applyLocalEdits() {
+  questions.forEach(question => {
+    const edit = state.edits[question.id];
+    if (edit) {
+      if (typeof edit.question === 'string') question.question = edit.question;
+      if (typeof edit.answer === 'string') question.answer = edit.answer;
+    }
+  });
 }
 
 function questionLabel(question) {
@@ -151,8 +165,8 @@ function updateStats() {
   $('#stat-percent').textContent = percentage + '%';
   $('#progress-fill').style.width = percentage + '%';
 
-  $('#variant-summary').textContent = 'Прорешано ' + variantAttempted + '/' + selected.length +
-    ' · выучено ' + variantKnown;
+  $('#variant-summary').textContent = randomTest ? 'Случайный тест · 30 вопросов' :
+    'Прорешано ' + variantAttempted + '/' + selected.length + ' · выучено ' + variantKnown;
 }
 
 function renderVariantPicker() {
@@ -194,6 +208,7 @@ function renderVariantPicker() {
 function selectVariant(variantId) {
   if (variantId !== 'all' && !variants.some(variant => variant.id === Number(variantId))) return;
   activeVariant = variantId === 'all' ? 'all' : Number(variantId);
+  randomTest = false;
   deck = makeDeck();
   deckPosition = 0;
   trainerQueue = makeDeck();
@@ -218,6 +233,18 @@ function makeDeck() {
   return arrangeDeck(currentVariantQuestions());
 }
 
+function startRandomTest() {
+  randomTest = true;
+  deck = shuffle(questions).slice(0, 30);
+  deckPosition = 0;
+  trainerQueue = [...deck];
+  trainerPosition = 0;
+  showDeckSession();
+  renderCard();
+  updateStats();
+  toast('Сформирован случайный тест из 30 вопросов');
+}
+
 function renderDeckModes() {
   const shuffled = $('#shuffle-btn');
   const ordered = $('#ordered-btn');
@@ -230,6 +257,7 @@ function renderDeckModes() {
 function setDeckMode(mode) {
   if (mode !== 'shuffle' && mode !== 'ordered') return;
   deckMode = mode;
+  randomTest = false;
   deck = makeDeck();
   deckPosition = 0;
   trainerQueue = makeDeck();
@@ -255,7 +283,7 @@ function renderCard() {
   const question = currentCard();
   if (!question) return;
 
-  $('#deck-category').textContent = variantLabel();
+  $('#deck-category').textContent = randomTest ? 'СЛУЧАЙНЫЙ ТЕСТ' : variantLabel();
   $('#card-number').textContent = String(deckPosition + 1).padStart(2, '0');
   $('#deck-total').textContent = String(deck.length);
   $('#card-question').textContent = question.question;
@@ -304,14 +332,14 @@ function showDeckSession() {
 }
 
 function showDeckCompletion() {
-  const selected = currentVariantQuestions();
+  const selected = randomTest ? deck : currentVariantQuestions();
   const knownCount = selected.filter(question => isKnown(question.id)).length;
   const attemptedCount = selected.filter(question => isAttempted(question.id)).length;
   const reviewCount = selected.filter(question => needsReview(question.id)).length;
   const unlearnedCount = selected.filter(question => !isKnown(question.id)).length;
   const untouchedCount = selected.filter(question => !isAttempted(question.id)).length;
 
-  $('#complete-title').textContent = (activeVariant === 'all' ? 'Все варианты' : 'Вариант ' + activeVariant) + ' пройден.';
+  $('#complete-title').textContent = (randomTest ? 'Случайный тест' : (activeVariant === 'all' ? 'Все варианты' : 'Вариант ' + activeVariant)) + ' пройден.';
   $('#complete-attempted').textContent = attemptedCount + ' / ' + selected.length;
   $('#complete-known').textContent = String(knownCount);
   $('#complete-review').textContent = String(reviewCount);
@@ -324,14 +352,14 @@ function showDeckCompletion() {
 }
 
 function restartWholeDeck() {
-  deck = makeDeck();
+  deck = randomTest ? shuffle(deck) : makeDeck();
   deckPosition = 0;
   showDeckSession();
   renderCard();
 }
 
 function restartUnlearnedDeck() {
-  const unlearned = currentVariantQuestions().filter(question => !isKnown(question.id));
+  const unlearned = (randomTest ? deck : currentVariantQuestions()).filter(question => !isKnown(question.id));
   if (!unlearned.length) {
     toast('Все карточки этого набора выучены');
     return;
@@ -772,8 +800,7 @@ async function init() {
     variants = payload.variants || [];
     questions = variants.flatMap(variant =>
       variant.questions.map(([question, answer], index) => {
-        // Первый вариант не содержит исходного вопроса № 22.
-        const sourceNumber = variant.id === 1 && index >= 21 ? index + 2 : index + 1;
+        const sourceNumber = index + 1;
         return {
           id: 'v' + variant.id + '-q' + String(sourceNumber).padStart(2, '0'),
           variantId: variant.id,
@@ -783,6 +810,7 @@ async function init() {
         };
       })
     );
+    applyLocalEdits();
 
     const expectedCounts = [29, 30, 30, 30];
     if (variants.length !== 4 || variants.some((variant, index) => variant.questions.length !== expectedCounts[index]) || questions.length !== 119) {
