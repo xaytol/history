@@ -1301,3 +1301,41 @@ body[data-theme="dark"] .deck-mode.active {
   .probability-grade strong { font-size: 13px; }
   .complete-stats strong { font-size: 17px; }
 }
+
+
+/* Local editing, random exam and reset controls */
+.random-test-button {
+  justify-self: start;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 700;
+}
+.random-test-button:hover {
+  border-color: var(--accent);
+  background: var(--surface-soft);
+}
+.reset-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.reset-danger { color: #a65e57; }
+.reset-danger:hover { color: #b44840; }
+@media (max-width: 680px) {
+  .random-test-button {
+    grid-column: 1 / -1;
+    justify-self: center;
+    min-height: 34px;
+    font-size: 11px;
+  }
+  .reset-actions {
+    justify-content: center;
+    gap: 8px 14px;
+  }
+}
