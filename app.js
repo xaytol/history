@@ -155,7 +155,7 @@ function updateStats() {
   const knownCount = questions.filter(question => isKnown(question.id)).length;
   const attemptedCount = questions.filter(question => isAttempted(question.id)).length;
   const percentage = total ? Math.round((attemptedCount / total) * 100) : 0;
-  const selected = currentVariantQuestions();
+  const selected = randomTest ? deck : currentVariantQuestions();
   const variantKnown = selected.filter(question => isKnown(question.id)).length;
   const variantAttempted = selected.filter(question => isAttempted(question.id)).length;
 
