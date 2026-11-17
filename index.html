@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f3f5f2">
   <meta name="description" content="Четыре варианта теста по истории России. 119 исходных вопросов и кратких ответов.">
   <title>History Lab — карточки по истории России</title>
-  <link rel="stylesheet" href="styles.css?v=20261117-probability2">
-  <script src="app.js?v=20261117-history-corrections" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261117-local-editor">
+  <script src="app.js?v=20261117-local-editor" defer></script>
 </head>
 <body data-theme="light">
   <div class="app-shell">
@@ -54,6 +54,7 @@
         <div class="deck-topline">
           <span id="deck-category">ВАРИАНТ 1</span>
           <span class="deck-count"><strong id="card-number">01</strong><span> / </span><span id="deck-total">29</span></span>
+          <button class="text-button random-test-button" id="random-test-btn" type="button">Случайный тест · 30</button>
           <div class="deck-modes" role="group" aria-label="Порядок карточек">
             <button class="deck-mode active" id="shuffle-btn" type="button" aria-pressed="true">Случайно</button>
             <button class="deck-mode" id="ordered-btn" type="button" aria-pressed="false">По порядку</button>
@@ -216,7 +217,7 @@
 
       <footer class="footer">
         <span>HISTORY LAB</span>
-        <button id="reset-progress" class="reset-button" type="button">Сбросить прогресс</button>
+        <div class="reset-actions"><button id="reset-progress" class="reset-button" type="button">Сбросить прогресс</button><button id="reset-everything" class="reset-button reset-danger" type="button">Полная очистка</button></div>
       </footer>
     </main>
   </div>
